@@ -1,5 +1,5 @@
-import { Link } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { Link } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 
 const Navbar = ({ showNavLinks = true }) => {
   const { user, logout } = useAuth();
@@ -34,21 +34,21 @@ const Navbar = ({ showNavLinks = true }) => {
                       to="/orders"
                       className="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
                     >
-                      Mis Órdenes
+                      Mis Ordenes
                     </Link>
-                    {user.role === 'SALES_MANAGER' && (
+                    {user.role === "SALES_MANAGER" && (
                       <>
                         <Link
                           to="/admin/products"
                           className="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
                         >
-                          Gestión de Productos
+                          Gestion de Productos
                         </Link>
                         <Link
                           to="/admin/orders"
                           className="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
                         >
-                          Gestión de Órdenes
+                          Gestion de ordenes
                         </Link>
                       </>
                     )}
@@ -65,16 +65,13 @@ const Navbar = ({ showNavLinks = true }) => {
                   onClick={logout}
                   className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
                 >
-                  Cerrar Sesión
+                  Cerrar Sesion
                 </button>
               </div>
             ) : (
               <div className="flex items-center space-x-4">
-                <Link
-                  to="/login"
-                  className="text-gray-500 hover:text-gray-700"
-                >
-                  Iniciar Sesión
+                <Link to="/login" className="text-gray-500 hover:text-gray-700">
+                  Iniciar Sesion
                 </Link>
                 <Link
                   to="/register"
@@ -91,4 +88,4 @@ const Navbar = ({ showNavLinks = true }) => {
   );
 };
 
-export default Navbar; 
+export default Navbar;

@@ -1,25 +1,28 @@
-import { useState, useEffect } from 'react';
-import axios from 'axios';
-import { useAuth } from '../context/AuthContext';
+import { useState, useEffect } from "react";
+import axios from "axios";
+import { useAuth } from "../context/AuthContext";
 
 const MyOrders = () => {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const { user } = useAuth();
 
   useEffect(() => {
     const fetchOrders = async () => {
       try {
-        const response = await axios.get('http://localhost:3000/api/orders/my-orders', {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem('token')}`,
-          },
-        });
+        const response = await axios.get(
+          "http://localhost:3000/api/orders/my-orders",
+          {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem("token")}`,
+            },
+          }
+        );
         setOrders(response.data);
         setLoading(false);
       } catch (error) {
-        setError('Error al cargar tus órdenes');
+        setError("Error al cargar tus ordenes");
         setLoading(false);
       }
     };
@@ -53,7 +56,7 @@ const MyOrders = () => {
             Acceso no autorizado
           </h2>
           <p className="text-gray-600">
-            Por favor inicia sesión para ver tus órdenes
+            Por favor inicia sesion para ver tus ordenes
           </p>
         </div>
       </div>
@@ -65,11 +68,9 @@ const MyOrders = () => {
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <h2 className="text-2xl font-bold text-gray-900 mb-4">
-            No tienes órdenes
+            No tienes ordenes
           </h2>
-          <p className="text-gray-600">
-            Aún no has realizado ninguna compra
-          </p>
+          <p className="text-gray-600">Aún no has realizado ninguna compra</p>
         </div>
       </div>
     );
@@ -77,7 +78,7 @@ const MyOrders = () => {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold text-gray-900 mb-8">Mis Órdenes</h1>
+      <h1 className="text-3xl font-bold text-gray-900 mb-8">Mis ordenes</h1>
       <div className="bg-white shadow overflow-hidden sm:rounded-lg">
         <div className="px-4 py-5 sm:px-6">
           <h3 className="text-lg leading-6 font-medium text-gray-900">
@@ -100,25 +101,25 @@ const MyOrders = () => {
                       Total: ${order.total}
                     </p>
                     <p className="text-sm text-gray-500">
-                      Estado:{' '}
+                      Estado:{" "}
                       <span
                         className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                           order.status === 0
-                            ? 'bg-yellow-100 text-yellow-800'
+                            ? "bg-yellow-100 text-yellow-800"
                             : order.status === 1
-                            ? 'bg-blue-100 text-blue-800'
+                            ? "bg-blue-100 text-blue-800"
                             : order.status === 2
-                            ? 'bg-green-100 text-green-800'
-                            : 'bg-red-100 text-red-800'
+                            ? "bg-green-100 text-green-800"
+                            : "bg-red-100 text-red-800"
                         }`}
                       >
                         {order.status === 0
-                          ? 'Pendiente'
+                          ? "Pendiente"
                           : order.status === 1
-                          ? 'Procesando'
+                          ? "Procesando"
                           : order.status === 2
-                          ? 'Entregado'
-                          : 'Cancelado'}
+                          ? "Entregado"
+                          : "Cancelado"}
                       </span>
                     </p>
                   </div>
@@ -152,4 +153,4 @@ const MyOrders = () => {
   );
 };
 
-export default MyOrders; 
+export default MyOrders;

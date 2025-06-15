@@ -1,13 +1,19 @@
-import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import { AuthProvider, useAuth } from './context/AuthContext';
-import Navbar from './components/Navbar';
-import Login from './pages/Login';
-import Register from './pages/Register';
-import Products from './pages/Products';
-import Cart from './pages/Cart';
-import ProductManagement from './pages/ProductManagement';
-import OrderManagement from './pages/OrderManagement';
-import MyOrders from './pages/MyOrders';
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+  useLocation,
+} from "react-router-dom";
+import { AuthProvider, useAuth } from "./context/AuthContext";
+import Navbar from "./components/Navbar";
+import Login from "./pages/Login";
+import Register from "./pages/Register";
+import Products from "./pages/Products";
+import Cart from "./pages/Cart";
+import ProductManagement from "./pages/ProductManagement";
+import OrderManagement from "./pages/OrderManagement";
+import MyOrders from "./pages/MyOrders";
 
 const PrivateRoute = ({ children, roles = [] }) => {
   const { user, loading } = useAuth();
@@ -34,7 +40,8 @@ const PrivateRoute = ({ children, roles = [] }) => {
 
 const AppContent = () => {
   const location = useLocation();
-  const isAuthPage = location.pathname === '/login' || location.pathname === '/register';
+  const isAuthPage =
+    location.pathname === "/login" || location.pathname === "/register";
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -70,7 +77,7 @@ const AppContent = () => {
           <Route
             path="/admin/products"
             element={
-              <PrivateRoute roles={['SALES_MANAGER']}>
+              <PrivateRoute roles={["SALES_MANAGER"]}>
                 <ProductManagement />
               </PrivateRoute>
             }
@@ -78,7 +85,7 @@ const AppContent = () => {
           <Route
             path="/admin/orders"
             element={
-              <PrivateRoute roles={['SALES_MANAGER']}>
+              <PrivateRoute roles={["SALES_MANAGER"]}>
                 <OrderManagement />
               </PrivateRoute>
             }
@@ -99,4 +106,4 @@ const App = () => {
   );
 };
 
-export default App; 
+export default App;

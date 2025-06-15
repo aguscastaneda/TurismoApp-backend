@@ -1,15 +1,15 @@
-import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { useState } from "react";
+import { useNavigate, Link } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 
 const Register = () => {
   const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    password: '',
-    confirmPassword: '',
+    name: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
   });
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const { register } = useAuth();
   const navigate = useNavigate();
@@ -20,28 +20,33 @@ const Register = () => {
       ...prev,
       [name]: value,
     }));
-    setError(''); // Limpiar error cuando el usuario modifica el formulario
+    setError(""); // Borrar error cuando el usuario modifica el formulario
   };
 
   const validateForm = () => {
-    if (!formData.name || !formData.email || !formData.password || !formData.confirmPassword) {
-      setError('Todos los campos son requeridos');
+    if (
+      !formData.name ||
+      !formData.email ||
+      !formData.password ||
+      !formData.confirmPassword
+    ) {
+      setError("Todos los campos son requeridos");
       return false;
     }
 
     if (formData.password.length < 6) {
-      setError('La contraseña debe tener al menos 6 caracteres');
+      setError("La contraseña debe tener al menos 6 caracteres");
       return false;
     }
 
     if (formData.password !== formData.confirmPassword) {
-      setError('Las contraseñas no coinciden');
+      setError("Las contraseñas no coinciden");
       return false;
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(formData.email)) {
-      setError('Formato de email inválido');
+      setError("Formato de email invalido");
       return false;
     }
 
@@ -50,7 +55,7 @@ const Register = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
+    setError("");
     setLoading(true);
 
     if (!validateForm()) {
@@ -64,9 +69,9 @@ const Register = () => {
         email: formData.email,
         password: formData.password,
       });
-      navigate('/');
+      navigate("/");
     } catch (error) {
-      setError(error.response?.data?.error || 'Error al registrar usuario');
+      setError(error.response?.data?.error || "Error al registrar usuario");
     } finally {
       setLoading(false);
     }
@@ -158,13 +163,13 @@ const Register = () => {
               type="submit"
               disabled={loading}
               className={`group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white ${
-                loading ? 'bg-blue-400' : 'bg-blue-600 hover:bg-blue-700'
+                loading ? "bg-blue-400" : "bg-blue-600 hover:bg-blue-700"
               } focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500`}
             >
               {loading ? (
                 <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
               ) : (
-                'Registrarse'
+                "Registrarse"
               )}
             </button>
           </div>
@@ -174,7 +179,7 @@ const Register = () => {
               to="/login"
               className="font-medium text-blue-600 hover:text-blue-500"
             >
-              ¿Ya tienes una cuenta? Inicia sesión
+              Ya tenes una cuenta? Inicia sesion
             </Link>
           </div>
         </form>
@@ -183,4 +188,4 @@ const Register = () => {
   );
 };
 
-export default Register; 
+export default Register;

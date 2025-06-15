@@ -1,29 +1,29 @@
-import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { useState } from "react";
+import { useNavigate, Link } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 
 const Login = () => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
+    setError("");
     setLoading(true);
 
     try {
       const result = await login(email, password);
       if (result.success) {
-        navigate('/');
+        navigate("/");
       } else {
-        setError(result.error || 'Error al iniciar sesión');
+        setError(result.error || "Error al iniciar sesion");
       }
     } catch (error) {
-      setError('Error al iniciar sesión. Por favor, intenta nuevamente.');
+      setError("Error al iniciar sesion. Por favor, intenta nuevamente.");
     } finally {
       setLoading(false);
     }
@@ -34,7 +34,7 @@ const Login = () => {
       <div className="max-w-md w-full space-y-8">
         <div>
           <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            Iniciar Sesión
+            Iniciar Sesion
           </h2>
         </div>
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
@@ -84,7 +84,7 @@ const Login = () => {
               className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
               disabled={loading}
             >
-              {loading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
+              {loading ? "Iniciando sesion..." : "Iniciar Sesion"}
             </button>
           </div>
 
@@ -93,7 +93,7 @@ const Login = () => {
               to="/register"
               className="font-medium text-blue-600 hover:text-blue-500"
             >
-              ¿No tienes cuenta? Regístrate
+              No tenes cuenta? Registrate
             </Link>
           </div>
         </form>
@@ -102,4 +102,4 @@ const Login = () => {
   );
 };
 
-export default Login; 
+export default Login;

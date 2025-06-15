@@ -1,38 +1,38 @@
-const { PrismaClient } = require('@prisma/client');
-const { Preference } = require('mercadopago');
-const mp = require('../config/mercadopago');
+const { PrismaClient } = require("@prisma/client");
+const { Preference } = require("mercadopago");
+const mp = require("../config/mercadopago");
 
-// Inicializar Prisma como una instancia global
+// Inicializar Prisma
 const prisma = new PrismaClient();
 
 // Manejar errores de Prisma
-prisma.$on('error', (e) => {
-  console.error('Prisma Error:', e);
+prisma.$on("error", (e) => {
+  console.error("Prisma Error:", e);
 });
 
 // Crear un nuevo pedido
 const createOrder = async (req, res) => {
   try {
-    console.log('Creating order for user:', req.user.id);
-    
+    console.log("Creando nuevo pedido para el usuario:", req.user.id);
+
     // Obtener el carrito del usuario
     const cart = await prisma.cart.findUnique({
       where: { userId: req.user.id },
       include: {
         items: {
           include: {
-            product: true
-          }
-        }
-      }
+            product: true,
+          },
+        },
+      },
     });
 
     if (!cart || cart.items.length === 0) {
-      console.log('Cart is empty or not found');
-      return res.status(400).json({ error: 'El carrito está vacío' });
+      console.log("Carrito vacio o no encontrado");
+      return res.status(400).json({ error: "El carrito esta vacio" });
     }
 
-    console.log('Cart items:', cart.items);
+    console.log("Items carrito:", cart.items);
 
     // Calcular el total
     const total = cart.items.reduce(
@@ -40,45 +40,45 @@ const createOrder = async (req, res) => {
       0
     );
 
-    console.log('Total calculated:', total);
+    console.log("Total calculado:", total);
 
     // Crear el pedido
     const order = await prisma.order.create({
       data: {
         userId: req.user.id,
         total,
-        status: 0, // PENDING
+        status: 0, // Estado: PENDING
         items: {
-          create: cart.items.map(item => ({
+          create: cart.items.map((item) => ({
             productId: item.productId,
             quantity: item.quantity,
-            price: item.product.price
-          }))
-        }
+            price: item.product.price,
+          })),
+        },
       },
       include: {
         items: {
           include: {
-            product: true
-          }
+            product: true,
+          },
         },
-        orderStatus: true
-      }
+        orderStatus: true,
+      },
     });
 
-    console.log('Order created:', order);
+    console.log("Orden creada:", order);
 
-    // Crear preferencia de pago en MercadoPago
+    // Crear pago en MercadoPago con preferencia
     const preference = new Preference(mp);
-    const items = cart.items.map(item => ({
+    const items = cart.items.map((item) => ({
       id: item.product.id,
       title: item.product.name,
       quantity: item.quantity,
       unit_price: Number(item.product.price),
-      currency_id: 'ARS'
+      currency_id: "ARS",
     }));
 
-    console.log('Creating MercadoPago preference with items:', items);
+    console.log("Creand pago con MP de los items:", items);
 
     const preferenceData = await preference.create({
       body: {
@@ -86,57 +86,59 @@ const createOrder = async (req, res) => {
         back_urls: {
           success: `${process.env.FRONTEND_URL}/orders/${order.id}/success`,
           failure: `${process.env.FRONTEND_URL}/orders/${order.id}/failure`,
-          pending: `${process.env.FRONTEND_URL}/orders/${order.id}/pending`
+          pending: `${process.env.FRONTEND_URL}/orders/${order.id}/pending`,
         },
-        auto_return: 'approved',
+        auto_return: "approved",
         notification_url: `${process.env.BACKEND_URL}/api/orders/webhook`,
-        external_reference: order.id.toString()
-      }
+        external_reference: order.id.toString(),
+      },
     });
 
-    console.log('MercadoPago preference created:', preferenceData);
+    console.log("Preferencia de MP creada:", preferenceData);
 
     // Actualizar el pedido con el ID de preferencia
     await prisma.order.update({
       where: { id: order.id },
-      data: { paymentId: preferenceData.id }
+      data: { paymentId: preferenceData.id },
     });
 
     // Vaciar carrito
     await prisma.cartItem.deleteMany({
-      where: { cartId: cart.id }
+      where: { cartId: cart.id },
     });
 
-    console.log('Cart cleared and order completed');
+    console.log("Carrito vaciado y orden completada");
 
     res.status(201).json({
       order,
-      paymentUrl: preferenceData.init_point
+      paymentUrl: preferenceData.init_point,
     });
   } catch (error) {
-    console.error('Error al crear la orden:', error);
-    res.status(500).json({ error: 'Error al crear la orden: ' + error.message });
+    console.error("Error al crear la orden:", error);
+    res
+      .status(500)
+      .json({ error: "Error al crear la orden: " + error.message });
   }
 };
 
-// Manejar webhook de MercadoPago
+// Manejar webhook de MP
 const handleWebhook = async (req, res) => {
   try {
     const { type, data } = req.body;
 
-    if (type === 'payment') {
+    if (type === "payment") {
       const payment = await mp.payment.findById(data.id);
       const orderId = payment.external_reference;
-      
+
       let status;
       switch (payment.status) {
-        case 'approved':
+        case "approved":
           status = 2; // COMPLETED
           break;
-        case 'pending':
+        case "pending":
           status = 1; // PROCESSING
           break;
-        case 'rejected':
+        case "rejected":
           status = 3; // CANCELLED
           break;
         default:
@@ -145,18 +147,18 @@ const handleWebhook = async (req, res) => {
 
       await prisma.order.update({
         where: { id: parseInt(orderId) },
-        data: { status }
+        data: { status },
       });
     }
 
-    res.status(200).send('OK');
+    res.status(200).send("OK");
   } catch (error) {
-    console.error('Error en webhook:', error);
-    res.status(500).json({ error: 'Error en webhook: ' + error.message });
+    console.error("Error en webhook:", error);
+    res.status(500).json({ error: "Error en webhook: " + error.message });
   }
 };
 
-// Obtener mis órdenes
+// Obtener mis ordenes
 const getMyOrders = async (req, res) => {
   try {
     const orders = await prisma.order.findMany({
@@ -164,21 +166,21 @@ const getMyOrders = async (req, res) => {
       include: {
         items: {
           include: {
-            product: true
-          }
+            product: true,
+          },
         },
-        orderStatus: true
+        orderStatus: true,
       },
-      orderBy: { createdAt: 'desc' }
+      orderBy: { createdAt: "desc" },
     });
 
     res.json(orders);
   } catch (error) {
-    res.status(500).json({ error: 'Error al obtener las órdenes' });
+    res.status(500).json({ error: "Error al obtener las ordenes" });
   }
 };
 
-// Obtener todas las órdenes (admin)
+// Obtener todas las ordenes (admin)
 const getAllOrders = async (req, res) => {
   try {
     const orders = await prisma.order.findMany({
@@ -187,22 +189,22 @@ const getAllOrders = async (req, res) => {
           select: {
             id: true,
             name: true,
-            email: true
-          }
+            email: true,
+          },
         },
         items: {
           include: {
-            product: true
-          }
+            product: true,
+          },
         },
-        orderStatus: true
+        orderStatus: true,
       },
-      orderBy: { createdAt: 'desc' }
+      orderBy: { createdAt: "desc" },
     });
 
     res.json(orders);
   } catch (error) {
-    res.status(500).json({ error: 'Error al obtener las órdenes' });
+    res.status(500).json({ error: "Error al obtener las ordenes" });
   }
 };
 
@@ -218,16 +220,18 @@ const updateOrderStatus = async (req, res) => {
       include: {
         items: {
           include: {
-            product: true
-          }
+            product: true,
+          },
         },
-        orderStatus: true
-      }
+        orderStatus: true,
+      },
     });
 
     res.json(order);
   } catch (error) {
-    res.status(500).json({ error: 'Error al actualizar el estado de la orden' });
+    res
+      .status(500)
+      .json({ error: "Error al actualizar el estado de la orden" });
   }
 };
 
@@ -242,16 +246,16 @@ const cancelOrder = async (req, res) => {
       include: {
         items: {
           include: {
-            product: true
-          }
+            product: true,
+          },
         },
-        orderStatus: true
-      }
+        orderStatus: true,
+      },
     });
 
     res.json(order);
   } catch (error) {
-    res.status(500).json({ error: 'Error al cancelar la orden' });
+    res.status(500).json({ error: "Error al cancelar la orden" });
   }
 };
 
@@ -261,5 +265,5 @@ module.exports = {
   getMyOrders,
   getAllOrders,
   updateOrderStatus,
-  cancelOrder
-}; 
+  cancelOrder,
+};

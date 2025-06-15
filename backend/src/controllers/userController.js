@@ -1,6 +1,6 @@
-const { PrismaClient } = require('@prisma/client');
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
+const { PrismaClient } = require("@prisma/client");
+const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
 const prisma = new PrismaClient();
 
 // Registrar nuevo usuario
@@ -10,18 +10,20 @@ const register = async (req, res) => {
 
     // Validar campos requeridos
     if (!name || !email || !password) {
-      return res.status(400).json({ error: 'Todos los campos son requeridos' });
+      return res.status(400).json({ error: "Todos los campos son requeridos" });
     }
 
     // Validar formato de email
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-      return res.status(400).json({ error: 'Formato de email inválido' });
+      return res.status(400).json({ error: "Formato de email invalido" });
     }
 
     // Validar longitud de contraseña
     if (password.length < 6) {
-      return res.status(400).json({ error: 'La contraseña debe tener al menos 6 caracteres' });
+      return res
+        .status(400)
+        .json({ error: "La contraseña debe tener al menos 6 caracteres" });
     }
 
     const existingUser = await prisma.user.findUnique({
@@ -29,12 +31,12 @@ const register = async (req, res) => {
     });
 
     if (existingUser) {
-      return res.status(400).json({ error: 'El email ya está registrado' });
+      return res.status(400).json({ error: "El email ya esta registrado" });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Crear usuario y carrito en una transacción
+    // Crear usuario y carrito en una transaccion
     const result = await prisma.$transaction(async (prisma) => {
       const user = await prisma.user.create({
         data: {
@@ -57,7 +59,7 @@ const register = async (req, res) => {
     const token = jwt.sign(
       { userId: result.id },
       process.env.JWT_SECRET,
-      { expiresIn: '24h' } // Token válido por 24 horas
+      { expiresIn: "2h" } // Token valido por 2 horas
     );
 
     res.status(201).json({
@@ -70,8 +72,8 @@ const register = async (req, res) => {
       token,
     });
   } catch (error) {
-    console.error('Error en registro:', error);
-    res.status(500).json({ error: 'Error al registrar usuario' });
+    console.error("Error en registro:", error);
+    res.status(500).json({ error: "Error al registrar usuario" });
   }
 };
 
@@ -82,7 +84,9 @@ const login = async (req, res) => {
 
     // Validar campos requeridos
     if (!email || !password) {
-      return res.status(400).json({ error: 'Email y contraseña son requeridos' });
+      return res
+        .status(400)
+        .json({ error: "Email y contraseña son requeridos" });
     }
 
     const user = await prisma.user.findUnique({
@@ -90,19 +94,19 @@ const login = async (req, res) => {
     });
 
     if (!user) {
-      return res.status(401).json({ error: 'Credenciales inválidas' });
+      return res.status(401).json({ error: "Credenciales invalidas" });
     }
 
     const isPasswordValid = await bcrypt.compare(password, user.password);
 
     if (!isPasswordValid) {
-      return res.status(401).json({ error: 'Credenciales inválidas' });
+      return res.status(401).json({ error: "Credenciales invalidas" });
     }
 
     const token = jwt.sign(
       { userId: user.id },
       process.env.JWT_SECRET,
-      { expiresIn: '24h' } // Token válido por 24 horas
+      { expiresIn: "2h" } // Token valido por 2 horas
     );
 
     res.json({
@@ -115,8 +119,8 @@ const login = async (req, res) => {
       token,
     });
   } catch (error) {
-    console.error('Error en login:', error);
-    res.status(500).json({ error: 'Error al iniciar sesión' });
+    console.error("Error en login:", error);
+    res.status(500).json({ error: "Error al iniciar sesion" });
   }
 };
 
@@ -134,13 +138,13 @@ const getMe = async (req, res) => {
     });
 
     if (!user) {
-      return res.status(404).json({ error: 'Usuario no encontrado' });
+      return res.status(404).json({ error: "Usuario no encontrado" });
     }
 
     res.json(user);
   } catch (error) {
-    console.error('Error al obtener perfil:', error);
-    res.status(500).json({ error: 'Error al obtener información del usuario' });
+    console.error("Error al obtener perfil:", error);
+    res.status(500).json({ error: "Error al obtener informacion del usuario" });
   }
 };
 
@@ -148,4 +152,4 @@ module.exports = {
   register,
   login,
   getMe,
-}; 
+};

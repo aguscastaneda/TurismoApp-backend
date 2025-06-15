@@ -1,36 +1,36 @@
-import { useState, useEffect } from 'react';
-import axios from 'axios';
-import { useAuth } from '../context/AuthContext';
+import { useState, useEffect } from "react";
+import axios from "axios";
+import { useAuth } from "../context/AuthContext";
 
 const ProductManagement = () => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
   const [editingProduct, setEditingProduct] = useState(null);
   const { user } = useAuth();
 
-  console.log('User in ProductManagement:', user);
+  console.log("Usuario en ProductManagement:", user);
 
   const [formData, setFormData] = useState({
-    name: '',
-    description: '',
-    price: '',
-    stock: '',
-    image: ''
+    name: "",
+    description: "",
+    price: "",
+    stock: "",
+    image: "",
   });
 
   const fetchProducts = async () => {
     try {
-      const response = await axios.get('http://localhost:3000/api/products', {
+      const response = await axios.get("http://localhost:3000/api/products", {
         headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
       });
       setProducts(response.data);
-      setError('');
+      setError("");
     } catch (error) {
-      setError('Error al cargar los productos');
+      setError("Error al cargar los productos");
     } finally {
       setLoading(false);
     }
@@ -42,9 +42,9 @@ const ProductManagement = () => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
   };
 
@@ -57,34 +57,30 @@ const ProductManagement = () => {
           formData,
           {
             headers: {
-              Authorization: `Bearer ${localStorage.getItem('token')}`,
+              Authorization: `Bearer ${localStorage.getItem("token")}`,
             },
           }
         );
-        setSuccess('Producto actualizado exitosamente');
+        setSuccess("Producto actualizado exitosamente");
       } else {
-        await axios.post(
-          'http://localhost:3000/api/products',
-          formData,
-          {
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem('token')}`,
-            },
-          }
-        );
-        setSuccess('Producto creado exitosamente');
+        await axios.post("http://localhost:3000/api/products", formData, {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        });
+        setSuccess("Producto creado exitosamente");
       }
       setFormData({
-        name: '',
-        description: '',
-        price: '',
-        stock: '',
-        image: ''
+        name: "",
+        description: "",
+        price: "",
+        stock: "",
+        image: "",
       });
       setEditingProduct(null);
       fetchProducts();
     } catch (error) {
-      setError(error.response?.data?.message || 'Error al guardar el producto');
+      setError(error.response?.data?.message || "Error al guardar el producto");
     }
   };
 
@@ -95,31 +91,33 @@ const ProductManagement = () => {
       description: product.description,
       price: product.price.toString(),
       stock: product.stock.toString(),
-      image: product.image || ''
+      image: product.image || "",
     });
   };
 
   const handleDelete = async (productId) => {
-    if (window.confirm('¿Estás seguro de que deseas eliminar este producto?')) {
+    if (window.confirm("Estas seguro de que deseas eliminar este producto?")) {
       try {
         await axios.delete(`http://localhost:3000/api/products/${productId}`, {
           headers: {
-            Authorization: `Bearer ${localStorage.getItem('token')}`,
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
         });
-        setSuccess('Producto eliminado exitosamente');
+        setSuccess("Producto eliminado exitosamente");
         fetchProducts();
       } catch (error) {
-        setError('Error al eliminar el producto');
+        setError("Error al eliminar el producto");
       }
     }
   };
 
-  if (!user || user.role !== 'SALES_MANAGER') {
-    console.log('Access denied. User:', user);
+  if (!user || user.role !== "SALES_MANAGER") {
+    console.log("Acceso denegado. Usuario:", user);
     return (
       <div className="text-center mt-8">
-        <p className="text-gray-600">No tienes permiso para acceder a esta página</p>
+        <p className="text-gray-600">
+          No tienes permiso para acceder a esta pagina
+        </p>
       </div>
     );
   }
@@ -137,10 +135,11 @@ const ProductManagement = () => {
       <div className="max-w-7xl mx-auto">
         <div className="text-center mb-12">
           <h1 className="text-4xl font-extrabold text-gray-900 sm:text-5xl sm:tracking-tight lg:text-6xl">
-            Gestión de Paquetes Turísticos
+            Gestion de Paquetes Turisticos
           </h1>
           <p className="mt-5 max-w-xl mx-auto text-xl text-gray-600">
-            Administra tus paquetes turísticos, crea nuevas experiencias y gestiona el inventario
+            Administra tus paquetes turisticos, crea nuevas experiencias y
+            gestiona el inventario
           </p>
         </div>
 
@@ -148,8 +147,16 @@ const ProductManagement = () => {
           <div className="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 mb-8 rounded-lg shadow-lg">
             <div className="flex">
               <div className="flex-shrink-0">
-                <svg className="h-5 w-5 text-red-500" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                <svg
+                  className="h-5 w-5 text-red-500"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                    clipRule="evenodd"
+                  />
                 </svg>
               </div>
               <div className="ml-3">
@@ -163,8 +170,16 @@ const ProductManagement = () => {
           <div className="bg-green-50 border-l-4 border-green-500 text-green-700 p-4 mb-8 rounded-lg shadow-lg">
             <div className="flex">
               <div className="flex-shrink-0">
-                <svg className="h-5 w-5 text-green-500" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                <svg
+                  className="h-5 w-5 text-green-500"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                    clipRule="evenodd"
+                  />
                 </svg>
               </div>
               <div className="ml-3">
@@ -177,7 +192,9 @@ const ProductManagement = () => {
         <div className="bg-white rounded-2xl shadow-lg overflow-hidden mb-12">
           <div className="px-6 py-8">
             <h2 className="text-2xl font-bold text-gray-900 mb-6">
-              {editingProduct ? 'Editar Paquete Turístico' : 'Nuevo Paquete Turístico'}
+              {editingProduct
+                ? "Editar Paquete Turistico"
+                : "Nuevo Paquete Turistico"}
             </h2>
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
@@ -220,7 +237,7 @@ const ProductManagement = () => {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Descripción
+                  Descripcion
                 </label>
                 <textarea
                   name="description"
@@ -229,7 +246,7 @@ const ProductManagement = () => {
                   rows="4"
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   required
-                  placeholder="Describe los detalles del paquete turístico..."
+                  placeholder="Describe los detalles del paquete turistico..."
                 />
               </div>
 
@@ -271,11 +288,11 @@ const ProductManagement = () => {
                     onClick={() => {
                       setEditingProduct(null);
                       setFormData({
-                        name: '',
-                        description: '',
-                        price: '',
-                        stock: '',
-                        image: ''
+                        name: "",
+                        description: "",
+                        price: "",
+                        stock: "",
+                        image: "",
                       });
                     }}
                     className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
@@ -287,7 +304,7 @@ const ProductManagement = () => {
                   type="submit"
                   className="px-6 py-2 border border-transparent rounded-lg text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                 >
-                  {editingProduct ? 'Actualizar' : 'Crear Paquete'}
+                  {editingProduct ? "Actualizar" : "Crear Paquete"}
                 </button>
               </div>
             </form>
@@ -296,28 +313,45 @@ const ProductManagement = () => {
 
         <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
           <div className="px-6 py-8">
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">Paquetes Turísticos Disponibles</h2>
+            <h2 className="text-2xl font-bold text-gray-900 mb-6">
+              Paquetes Turisticos Disponibles
+            </h2>
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th
+                      scope="col"
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                    >
                       Paquete
                     </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th
+                      scope="col"
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                    >
                       Precio
                     </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th
+                      scope="col"
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                    >
                       Cupos
                     </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th
+                      scope="col"
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                    >
                       Acciones
                     </th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {products.map((product) => (
-                    <tr key={product.id} className="hover:bg-gray-50 transition-colors duration-150">
+                    <tr
+                      key={product.id}
+                      className="hover:bg-gray-50 transition-colors duration-150"
+                    >
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
                           {product.image && (
@@ -330,16 +364,24 @@ const ProductManagement = () => {
                             </div>
                           )}
                           <div className="ml-4">
-                            <div className="text-sm font-medium text-gray-900">{product.name}</div>
-                            <div className="text-sm text-gray-500">{product.description}</div>
+                            <div className="text-sm font-medium text-gray-900">
+                              {product.name}
+                            </div>
+                            <div className="text-sm text-gray-500">
+                              {product.description}
+                            </div>
                           </div>
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">${product.price}</div>
+                        <div className="text-sm text-gray-900">
+                          ${product.price}
+                        </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">{product.stock}</div>
+                        <div className="text-sm text-gray-900">
+                          {product.stock}
+                        </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <button
@@ -367,4 +409,4 @@ const ProductManagement = () => {
   );
 };
 
-export default ProductManagement; 
+export default ProductManagement;

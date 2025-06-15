@@ -1,4 +1,4 @@
-const { PrismaClient } = require('@prisma/client');
+const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
 
 // Obtener todos los productos
@@ -7,7 +7,7 @@ const getProducts = async (req, res) => {
     const products = await prisma.product.findMany();
     res.json(products);
   } catch (error) {
-    res.status(500).json({ error: 'Error al obtener productos' });
+    res.status(500).json({ error: "Error al obtener productos" });
   }
 };
 
@@ -20,16 +20,16 @@ const getProduct = async (req, res) => {
     });
 
     if (!product) {
-      return res.status(404).json({ error: 'Producto no encontrado' });
+      return res.status(404).json({ error: "Producto no encontrado" });
     }
 
     res.json(product);
   } catch (error) {
-    res.status(500).json({ error: 'Error al obtener producto' });
+    res.status(500).json({ error: "Error al obtener producto" });
   }
 };
 
-// Crear un nuevo producto (solo jefe de ventas)
+// Crear un nuevo producto (solo admin)
 const createProduct = async (req, res) => {
   try {
     const { name, description, price, stock } = req.body;
@@ -45,11 +45,11 @@ const createProduct = async (req, res) => {
 
     res.status(201).json(product);
   } catch (error) {
-    res.status(500).json({ error: 'Error al crear producto' });
+    res.status(500).json({ error: "Error al crear producto" });
   }
 };
 
-// Actualizar un producto (solo jefe de ventas)
+// Actualizar un producto (solo admin)
 const updateProduct = async (req, res) => {
   try {
     const { id } = req.params;
@@ -67,11 +67,11 @@ const updateProduct = async (req, res) => {
 
     res.json(product);
   } catch (error) {
-    res.status(500).json({ error: 'Error al actualizar producto' });
+    res.status(500).json({ error: "Error al actualizar producto" });
   }
 };
 
-// Eliminar un producto (solo jefe de ventas)
+// Eliminar un producto (solo admin)
 const deleteProduct = async (req, res) => {
   try {
     const { id } = req.params;
@@ -82,7 +82,7 @@ const deleteProduct = async (req, res) => {
 
     res.status(204).send();
   } catch (error) {
-    res.status(500).json({ error: 'Error al eliminar producto' });
+    res.status(500).json({ error: "Error al eliminar producto" });
   }
 };
 
@@ -92,4 +92,4 @@ module.exports = {
   createProduct,
   updateProduct,
   deleteProduct,
-}; 
+};

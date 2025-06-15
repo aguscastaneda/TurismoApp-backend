@@ -1,39 +1,40 @@
-import { useState } from 'react';
-import axios from 'axios';
-import { useAuth } from '../context/AuthContext';
+import { useState } from "react";
+import axios from "axios";
+import { useAuth } from "../context/AuthContext";
 
 const ProductCard = ({ product }) => {
   const [quantity, setQuantity] = useState(1);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
   const { user } = useAuth();
 
   const handleAddToCart = async () => {
     if (!user) {
-      setError('Por favor inicia sesión para agregar productos al carrito');
+      setError("Por favor inicia sesion para agregar productos al carrito");
       return;
     }
 
     try {
       await axios.post(
-        'http://localhost:3000/api/cart',
+        "http://localhost:3000/api/cart",
         {
           productId: product.id,
           quantity,
         },
         {
           headers: {
-            Authorization: `Bearer ${localStorage.getItem('token')}`,
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
         }
       );
-      setError('');
-      setSuccess('¡Producto agregado correctamente!');
-      // Clear success message after 3 seconds
-      setTimeout(() => setSuccess(''), 3000);
+      setError("");
+      setSuccess("Producto agregado correctamente!");
+      setTimeout(() => setSuccess(""), 3000); // Se elimina mensaje depsues de 3 segundos
     } catch (error) {
-      setError(error.response?.data?.error || 'Error al agregar el producto al carrito');
-      console.error('Error al agregar al carrito:', error);
+      setError(
+        error.response?.data?.error || "Error al agregar el producto al carrito"
+      );
+      console.error("Error al agregar al carrito:", error);
     }
   };
 
@@ -50,10 +51,10 @@ const ProductCard = ({ product }) => {
           </span>
           <span
             className={`text-sm font-medium ${
-              product.stock > 0 ? 'text-green-600' : 'text-red-600'
+              product.stock > 0 ? "text-green-600" : "text-red-600"
             }`}
           >
-            {product.stock > 0 ? `Stock: ${product.stock}` : 'Sin stock'}
+            {product.stock > 0 ? `Stock: ${product.stock}` : "Sin stock"}
           </span>
         </div>
         {error && (
@@ -81,7 +82,12 @@ const ProductCard = ({ product }) => {
               max={product.stock}
               value={quantity}
               onChange={(e) =>
-                setQuantity(Math.min(product.stock, Math.max(1, parseInt(e.target.value) || 1)))
+                setQuantity(
+                  Math.min(
+                    product.stock,
+                    Math.max(1, parseInt(e.target.value) || 1)
+                  )
+                )
               }
               className="w-16 text-center border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
             />
@@ -97,7 +103,7 @@ const ProductCard = ({ product }) => {
             onClick={handleAddToCart}
             disabled={product.stock === 0}
             className={`flex-1 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 ${
-              product.stock === 0 ? 'opacity-50 cursor-not-allowed' : ''
+              product.stock === 0 ? "opacity-50 cursor-not-allowed" : ""
             }`}
           >
             Agregar al carrito
@@ -108,4 +114,4 @@ const ProductCard = ({ product }) => {
   );
 };
 
-export default ProductCard; 
+export default ProductCard;

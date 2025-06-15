@@ -1,18 +1,18 @@
-# E-commerce Platform
+# Turismo App
 
-Una plataforma de comercio electrónico desarrollada con React, Node.js y Prisma.
+Una plataforma de comercio electronico desarrollada con React, Node.js y Prisma.
 
-## Características
+## Caracteristicas
 
-- Autenticación de usuarios (registro, login, sesión persistente)
-- Gestión de productos (CRUD)
+- Autenticacion de usuarios (registro, login, sesion persistente)
+- Gestion de productos (CRUD)
 - Carrito de compras
 - Proceso de checkout
-- Integración con MercadoPago
-- Panel de administración
-- Gestión de órdenes
+- Integracion con MercadoPago
+- Panel de administracion
+- Gestion de ordenes
 
-## Tecnologías Utilizadas
+## Tecnologias Utilizadas
 
 ### Frontend
 - React
@@ -25,7 +25,7 @@ Una plataforma de comercio electrónico desarrollada con React, Node.js y Prisma
 - Express
 - Prisma (ORM)
 - MySQL
-- JWT para autenticación
+- JWT para autenticacion
 - MercadoPago SDK
 
 ## Requisitos Previos
@@ -34,43 +34,32 @@ Una plataforma de comercio electrónico desarrollada con React, Node.js y Prisma
 - MySQL
 - Cuenta de MercadoPago (para pagos)
 
-## Instalación
+## Instalacion
 
-1. Clonar el repositorio:
-```bash
-git clone <url-del-repositorio>
-cd <nombre-del-directorio>
-```
-
-2. Instalar dependencias del backend:
-```bash
-cd backend
-npm install
-```
-
-3. Instalar dependencias del frontend:
+1. Instalar dependencias del frontend:
 ```bash
 cd frontend
 npm install
 ```
 
-4. Configurar variables de entorno:
-   - Crear archivo `.env` en la carpeta `backend` con las siguientes variables:
+1. Configurar variables de entorno:
+   - Crear archivo .env en la carpeta backend con las siguientes variables:
    ```
-   DATABASE_URL="mysql://usuario:contraseña@localhost:3306/nombre_db"
-   JWT_SECRET="tu_secreto_jwt"
-   MERCADOPAGO_ACCESS_TOKEN="tu_token_mercadopago"
-   FRONTEND_URL="http://localhost:5173"
+   DATABASE_URL="mysql://root:123456@localhost:3306/olimpiadas"
+   JWT_SECRET="claveJWTolimpiadas"
+   PORT=3000
+   MERCADOPAGO_ACCESS_TOKEN="TEST-3613698802231358-061221-64301f5efdde18544bc536238ed1b58e-278776399"
    BACKEND_URL="http://localhost:3000"
+   FRONTEND_URL="http://localhost:5173"
    ```
 
-5. Ejecutar migraciones de la base de datos:
+2. Ejecutar migraciones de la base de datos:
 ```bash
 cd backend
 npx prisma migrate dev
 ```
 
-## Ejecución
+## Ejecucion
 
 1. Iniciar el backend:
 ```bash
@@ -109,16 +98,8 @@ npm run dev
 
 ## Roles de Usuario
 
-- **CLIENT**: Usuario regular que puede comprar productos
-- **SALES_MANAGER**: Administrador que puede gestionar productos y órdenes
-
-## Contribución
-
-1. Fork el proyecto
-2. Crear una rama para tu feature (`git checkout -b feature/AmazingFeature`)
-3. Commit tus cambios (`git commit -m 'Add some AmazingFeature'`)
-4. Push a la rama (`git push origin feature/AmazingFeature`)
-5. Abrir un Pull Request
+- CLIENT: Usuario regular que puede comprar productos
+- SALES_MANAGER: Administrador que puede gestionar productos y ordenes
 
 ## Base de datos
 

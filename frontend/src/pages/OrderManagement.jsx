@@ -1,31 +1,31 @@
-import { useState, useEffect } from 'react';
-import axios from 'axios';
-import { useAuth } from '../context/AuthContext';
+import { useState, useEffect } from "react";
+import axios from "axios";
+import { useAuth } from "../context/AuthContext";
 
-const OrderManagement = () => {
-  const [orders, setOrders] = useState([]);
+const orderManagement = () => {
+  const [orders, setorders] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const { user } = useAuth();
 
-  const fetchOrders = async () => {
+  const fetchorders = async () => {
     try {
       setLoading(true);
-      setError('');
-      const response = await axios.get('http://localhost:3000/api/orders', {
+      setError("");
+      const response = await axios.get("http://localhost:3000/api/orders", {
         headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
       });
-      setOrders(response.data);
+      setorders(response.data);
     } catch (error) {
-      console.error('Error fetching orders:', error);
+      console.error("Error al recuperar pedidos:", error);
       if (error.response?.status === 403) {
-        setError('No tienes permisos para ver las órdenes. Debes ser un administrador.');
+        setError("No tienes permisos para ver las ordenes. Debes ser admin.");
       } else if (error.response?.status === 401) {
-        setError('Tu sesión ha expirado. Por favor, inicia sesión nuevamente.');
+        setError("Tu sesion ha expirado. Por favor, inicia sesion nuevamente.");
       } else {
-        setError('Error al cargar las órdenes. Por favor, intenta nuevamente.');
+        setError("Error al cargar las ordenes. Por favor, intenta nuevamente.");
       }
     } finally {
       setLoading(false);
@@ -33,34 +33,38 @@ const OrderManagement = () => {
   };
 
   useEffect(() => {
-    fetchOrders();
+    fetchorders();
   }, []);
 
   const handleUpdateStatus = async (orderId, newStatus) => {
     try {
-      setError('');
+      setError("");
       await axios.put(
         `http://localhost:3000/api/orders/${orderId}/status`,
         { status: newStatus },
         {
           headers: {
-            Authorization: `Bearer ${localStorage.getItem('token')}`,
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
         }
       );
-      // Refresh orders after status update
-      fetchOrders();
+      // Actualizar pedidos despues de la actualizacion de estado
+      fetchorders();
     } catch (error) {
-      console.error('Error updating order status:', error);
+      console.error("Error al actualizar el estado del pedido:", error);
       if (error.response?.status === 403) {
-        setError('No tienes permisos para actualizar el estado de las órdenes.');
+        setError(
+          "No tienes permisos para actualizar el estado de las ordenes."
+        );
       } else {
-        setError('Error al actualizar el estado de la orden. Por favor, intenta nuevamente.');
+        setError(
+          "Error al actualizar el estado de la orden. Por favor, intenta nuevamente."
+        );
       }
     }
   };
 
-  if (!user || user.role !== 'SALES_MANAGER') {
+  if (!user || user.role !== "SALES_MANAGER") {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -91,7 +95,7 @@ const OrderManagement = () => {
             {error}
           </div>
           <button
-            onClick={fetchOrders}
+            onClick={fetchorders}
             className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
           >
             Reintentar
@@ -104,11 +108,9 @@ const OrderManagement = () => {
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">
-          Gestión de Órdenes
-        </h1>
+        <h1 className="text-3xl font-bold text-gray-900">Gestion de ordenes</h1>
         <button
-          onClick={fetchOrders}
+          onClick={fetchorders}
           className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
         >
           Actualizar
@@ -117,13 +119,13 @@ const OrderManagement = () => {
       <div className="bg-white shadow overflow-hidden sm:rounded-lg">
         <div className="px-4 py-5 sm:px-6">
           <h3 className="text-lg leading-6 font-medium text-gray-900">
-            Lista de Órdenes
+            Lista de ordenes
           </h3>
         </div>
         <div className="border-t border-gray-200">
           {orders.length === 0 ? (
             <div className="px-4 py-5 sm:px-6 text-center text-gray-500">
-              No hay órdenes para mostrar
+              No hay ordenes para mostrar
             </div>
           ) : (
             <ul className="divide-y divide-gray-200">
@@ -132,7 +134,7 @@ const OrderManagement = () => {
                   <div className="flex items-center justify-between">
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-gray-900 truncate">
-                        Orden #{order.id} - {order.user.name}
+                        orden #{order.id} - {order.user.name}
                       </p>
                       <p className="text-sm text-gray-500">
                         Total: ${order.total} - Estado: {order.orderStatus.name}
@@ -141,7 +143,9 @@ const OrderManagement = () => {
                     <div className="flex items-center space-x-4">
                       <select
                         value={order.status}
-                        onChange={(e) => handleUpdateStatus(order.id, parseInt(e.target.value))}
+                        onChange={(e) =>
+                          handleUpdateStatus(order.id, parseInt(e.target.value))
+                        }
                         className="rounded border-gray-300"
                       >
                         <option value={0}>Pendiente</option>
@@ -161,4 +165,4 @@ const OrderManagement = () => {
   );
 };
 
-export default OrderManagement; 
+export default orderManagement;

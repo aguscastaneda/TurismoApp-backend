@@ -1,5 +1,5 @@
-import { createContext, useContext, useState, useEffect } from 'react';
-import axios from 'axios';
+import { createContext, useContext, useState, useEffect } from "react";
+import axios from "axios";
 
 const AuthContext = createContext();
 
@@ -13,21 +13,24 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     const initializeAuth = async () => {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem("token");
       if (token) {
         try {
-          // Verificar si el token es válido
-          const response = await axios.get('http://localhost:3000/api/auth/me', {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          });
+          // Verificar si el token es valido
+          const response = await axios.get(
+            "http://localhost:3000/api/auth/me",
+            {
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+            }
+          );
           setUser(response.data);
         } catch (error) {
-          console.error('Error al verificar la sesión:', error);
-          // Si hay un error de autenticación, limpiar el token
+          console.error("Error al verificar la sesión:", error);
+          // Si hay un error de autenticacion, elimina el token
           if (error.response?.status === 401) {
-            localStorage.removeItem('token');
+            localStorage.removeItem("token");
             setUser(null);
           }
         }
@@ -40,47 +43,53 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     try {
-      const response = await axios.post('http://localhost:3000/api/auth/login', {
-        email,
-        password,
-      });
+      const response = await axios.post(
+        "http://localhost:3000/api/auth/login",
+        {
+          email,
+          password,
+        }
+      );
 
       const { token, user } = response.data;
-      localStorage.setItem('token', token);
+      localStorage.setItem("token", token);
       setUser(user);
       return { success: true };
     } catch (error) {
-      console.error('Error en login:', error);
+      console.error("Error en login:", error);
       return {
         success: false,
-        error: error.response?.data?.error || 'Error al iniciar sesión',
+        error: error.response?.data?.error || "Error al iniciar sesion",
       };
     }
   };
 
   const register = async (name, email, password) => {
     try {
-      const response = await axios.post('http://localhost:3000/api/auth/register', {
-        name,
-        email,
-        password,
-      });
+      const response = await axios.post(
+        "http://localhost:3000/api/auth/register",
+        {
+          name,
+          email,
+          password,
+        }
+      );
 
       const { token, user } = response.data;
-      localStorage.setItem('token', token);
+      localStorage.setItem("token", token);
       setUser(user);
       return { success: true };
     } catch (error) {
-      console.error('Error en registro:', error);
+      console.error("Error en registro:", error);
       return {
         success: false,
-        error: error.response?.data?.error || 'Error al registrar usuario',
+        error: error.response?.data?.error || "Error al registrar usuario",
       };
     }
   };
 
   const logout = () => {
-    localStorage.removeItem('token');
+    localStorage.removeItem("token");
     setUser(null);
   };
 
@@ -97,4 +106,4 @@ export const AuthProvider = ({ children }) => {
       {!loading && children}
     </AuthContext.Provider>
   );
-}; 
+};
