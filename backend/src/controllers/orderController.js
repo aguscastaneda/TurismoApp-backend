@@ -214,9 +214,29 @@ const updateOrderStatus = async (req, res) => {
     const { orderId } = req.params;
     const { status } = req.body;
 
+    console.log("Actualizando estado de orden:", { orderId, status });
+
+    const statusNumber = parseInt(status);
+    if (isNaN(statusNumber) || statusNumber < 0 || statusNumber > 3) {
+      return res.status(400).json({ 
+        error: "Estado inválido. Debe ser un número entre 0 y 3" 
+      });
+    }
+
+    // Verificar que la orden existe
+    const existingOrder = await prisma.order.findUnique({
+      where: { id: parseInt(orderId) }
+    });
+
+    if (!existingOrder) {
+      return res.status(404).json({ 
+        error: "Orden no encontrada" 
+      });
+    }
+
     const order = await prisma.order.update({
       where: { id: parseInt(orderId) },
-      data: { status },
+      data: { status: statusNumber },
       include: {
         items: {
           include: {
@@ -227,11 +247,13 @@ const updateOrderStatus = async (req, res) => {
       },
     });
 
+    console.log("Orden actualizada exitosamente:", order.id);
     res.json(order);
   } catch (error) {
-    res
-      .status(500)
-      .json({ error: "Error al actualizar el estado de la orden" });
+    console.error("Error al actualizar el estado de la orden:", error);
+    res.status(500).json({ 
+      error: "Error al actualizar el estado de la orden: " + error.message 
+    });
   }
 };
 

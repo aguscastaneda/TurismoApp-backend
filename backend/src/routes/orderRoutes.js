@@ -18,8 +18,8 @@ router.post("/webhook", handleWebhook);
 router.use(auth);
 
 // Rutas de admin
-router.get("/", checkRole(["SALES_MANAGER"]), getAllOrders);
-router.put("/:orderId/status", checkRole(["SALES_MANAGER"]), updateOrderStatus);
+router.get("/", checkRole(["SALES_MANAGER", "ADMIN"]), getAllOrders);
+router.patch("/:orderId/status", checkRole(["SALES_MANAGER", "ADMIN"]), updateOrderStatus);
 
 // Rutas de cliente
 router.get("/my-orders", getMyOrders);

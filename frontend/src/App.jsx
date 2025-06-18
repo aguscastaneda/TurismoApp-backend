@@ -1,37 +1,50 @@
-import {
-  BrowserRouter as Router,
-  Routes,
-  Route,
-  Navigate,
-  useLocation,
-} from "react-router-dom";
-import { AuthProvider, useAuth } from "./context/AuthContext";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import { Auth0ProviderWithConfig } from "./context/AuthContext";
+import { CartProvider } from "./context/CartContext";
 import Navbar from "./components/Navbar";
+import Products from "./pages/Products";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
-import Products from "./pages/Products";
 import Cart from "./pages/Cart";
-import ProductManagement from "./pages/ProductManagement";
-import OrderManagement from "./pages/OrderManagement";
 import MyOrders from "./pages/MyOrders";
+import OrderManagement from "./pages/OrderManagement";
+import ProductManagement from "./pages/ProductManagement";
+import { useAuth } from "./context/AuthContext";
 
-const PrivateRoute = ({ children, roles = [] }) => {
-  const { user, loading } = useAuth();
-  const location = useLocation();
+const PrivateRoute = ({ children }) => {
+  const { isAuthenticated, isLoading } = useAuth();
 
-  if (loading) {
+  if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
       </div>
     );
   }
 
-  if (!user) {
-    return <Navigate to="/login" state={{ from: location }} replace />;
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
   }
 
-  if (roles.length > 0 && !roles.includes(user.role)) {
+  return children;
+};
+
+const AdminRoute = ({ children }) => {
+  const { isAuthenticated, user, isLoading } = useAuth();
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (user?.role !== "ADMIN") {
     return <Navigate to="/" replace />;
   }
 
@@ -39,57 +52,48 @@ const PrivateRoute = ({ children, roles = [] }) => {
 };
 
 const AppContent = () => {
-  const location = useLocation();
-  const isAuthPage =
-    location.pathname === "/login" || location.pathname === "/register";
+  const { isAuthenticated, isLoading } = useAuth();
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Navbar showNavLinks={!isAuthPage} />
-      <main className="container mx-auto px-4 py-10">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
+      {isAuthenticated && <Navbar />}
+      <main>
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
-          <Route
-            path="/"
-            element={
-              <PrivateRoute>
-                <Products />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/cart"
-            element={
-              <PrivateRoute>
-                <Cart />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/orders"
-            element={
-              <PrivateRoute>
-                <MyOrders />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/admin/products"
-            element={
-              <PrivateRoute roles={["SALES_MANAGER"]}>
-                <ProductManagement />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/admin/orders"
-            element={
-              <PrivateRoute roles={["SALES_MANAGER"]}>
-                <OrderManagement />
-              </PrivateRoute>
-            }
-          />
+          <Route path="/" element={
+            <PrivateRoute>
+              <Products />
+            </PrivateRoute>
+          } />
+          <Route path="/cart" element={
+            <PrivateRoute>
+              <Cart />
+            </PrivateRoute>
+          } />
+          <Route path="/my-orders" element={
+            <PrivateRoute>
+              <MyOrders />
+            </PrivateRoute>
+          } />
+          <Route path="/admin/orders" element={
+            <AdminRoute>
+              <OrderManagement />
+            </AdminRoute>
+          } />
+          <Route path="/admin/products" element={
+            <AdminRoute>
+              <ProductManagement />
+            </AdminRoute>
+          } />
         </Routes>
       </main>
     </div>
@@ -98,11 +102,13 @@ const AppContent = () => {
 
 const App = () => {
   return (
-    <AuthProvider>
-      <Router>
-        <AppContent />
-      </Router>
-    </AuthProvider>
+    <Router>
+      <Auth0ProviderWithConfig>
+        <CartProvider>
+          <AppContent />
+        </CartProvider>
+      </Auth0ProviderWithConfig>
+    </Router>
   );
 };
 

@@ -10,8 +10,9 @@ datasource db {
 model User {
   id        Int       @id @default(autoincrement())
   email     String    @unique @db.VarChar(255)
-  password  String    @db.VarChar(255)
+  password  String?   @db.VarChar(255)
   name      String    @db.VarChar(255)
+  googleId  String?   @unique @db.VarChar(255)
   role      user_role @default(CLIENT)
   createdAt DateTime  @default(now()) @map("createdAt")
   updatedAt DateTime  @updatedAt @map("updatedAt")
@@ -27,6 +28,7 @@ model Product {
   description String?     @db.Text
   price       Decimal     @db.Decimal(10, 2)
   stock       Int
+  destination String?     @db.VarChar(255)
   image       String?     @db.VarChar(255)
   createdAt   DateTime    @default(now()) @map("createdAt")
   updatedAt   DateTime    @updatedAt @map("updatedAt")
@@ -100,4 +102,5 @@ model OrderItem {
 enum user_role {
   CLIENT
   SALES_MANAGER
+  ADMIN
 }

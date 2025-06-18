@@ -1,246 +1,182 @@
-import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import axios from "axios";
-import { useAuth } from "../context/AuthContext";
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useCart } from '../context/CartContext';
+import { useAuth } from '../context/AuthContext';
 
 const Cart = () => {
-  const [cart, setCart] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [checkoutLoading, setCheckoutLoading] = useState(false);
-  const [error, setError] = useState("");
-  const { user } = useAuth();
+  const { cart, removeFromCart, updateQuantity, clearCart, getTotal } = useCart();
+  const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
-  useEffect(() => {
-    const fetchCart = async () => {
-      try {
-        const response = await axios.get("http://localhost:3000/api/cart", {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-        });
-        setCart(response.data);
-        setLoading(false);
-      } catch (error) {
-        setError("Error al cargar el carrito");
-        setLoading(false);
-      }
-    };
-
-    fetchCart();
-  }, []);
-
-  const handleUpdateQuantity = async (itemId, newQuantity) => {
-    try {
-      await axios.put(
-        `http://localhost:3000/api/cart/${itemId}`,
-        { quantity: newQuantity },
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-        }
-      );
-      const response = await axios.get("http://localhost:3000/api/cart", {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-      });
-      setCart(response.data);
-    } catch (error) {
-      setError(
-        error.response?.data?.error || "Error al actualizar la cantidad"
-      );
-      console.error("Error al actualizar cantidad:", error);
-    }
-  };
-
-  const handleRemoveItem = async (itemId) => {
-    try {
-      await axios.delete(`http://localhost:3000/api/cart/${itemId}`, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-      });
-      const response = await axios.get("http://localhost:3000/api/cart", {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-      });
-      setCart(response.data);
-    } catch (error) {
-      setError(error.response?.data?.error || "Error al eliminar el item");
-      console.error("Error al eliminar item:", error);
-    }
+  const handleQuantityChange = (productId, newQuantity) => {
+    if (newQuantity < 1) return;
+    updateQuantity(productId, newQuantity);
   };
 
   const handleCheckout = async () => {
-    setCheckoutLoading(true);
-    setError("");
+    if (!isAuthenticated) {
+      navigate('/login');
+      return;
+    }
 
     try {
-      // Primero crea el pedido
-      const orderResponse = await axios.post(
-        "http://localhost:3000/api/orders",
-        {},
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-        }
-      );
+      setLoading(true);
+      setError(null);
 
-      if (!orderResponse.data || !orderResponse.data.id) {
-        throw new Error("No se pudo crear la orden");
-      }
-
-      // Despues metodo de pago
-      const paymentResponse = await axios.post(
-        "http://localhost:3000/api/payments",
-        {
-          orderId: orderResponse.data.id,
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/orders`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
         },
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-        }
-      );
+        body: JSON.stringify({
+          items: cart.map(item => ({
+            productId: item.productId,
+            quantity: item.quantity
+          }))
+        })
+      });
 
-      if (paymentResponse.data && paymentResponse.data.paymentUrl) {
-        window.location.href = paymentResponse.data.paymentUrl;
-      } else {
-        throw new Error("No se pudo procesar el pago");
+      if (!response.ok) {
+        throw new Error('Error al procesar la orden');
       }
+
+      clearCart();
+      navigate('/my-orders');
     } catch (error) {
-      console.error("Error en el proceso de checkout:", error);
-      setError(
-        error.response?.data?.error ||
-          "Error al procesar la orden. Por favor, intenta nuevamente."
-      );
+      console.error('Error during checkout:', error);
+      setError(error.message);
     } finally {
-      setCheckoutLoading(false);
+      setLoading(false);
     }
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
-      </div>
-    );
-  }
+  const total = getTotal();
 
-  if (error) {
+  if (!isAuthenticated) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative">
-          {error}
-        </div>
-      </div>
-    );
-  }
-
-  if (!cart || cart.items.length === 0) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">
-            Tu carrito está vacío
-          </h2>
-          <button
-            onClick={() => navigate("/")}
-            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-          >
-            Ver productos
-          </button>
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 py-12 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center">
+            <h1 className="text-4xl font-bold text-slate-800 mb-4">Carrito de Compras</h1>
+            <p className="text-lg text-slate-600 mb-8">
+              Inicia sesión para ver tu carrito
+            </p>
+            <button
+              onClick={() => navigate('/login')}
+              className="btn-primary"
+            >
+              Iniciar Sesión
+            </button>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold text-gray-900 mb-8">
-        Carrito de Compras
-      </h1>
-      <div className="bg-white shadow overflow-hidden sm:rounded-lg">
-        <div className="px-4 py-5 sm:px-6">
-          <h3 className="text-lg leading-6 font-medium text-gray-900">
-            Items en el carrito
-          </h3>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto">
+        <div className="text-center mb-12">
+          <h1 className="text-4xl font-bold text-slate-800 mb-4">Carrito de Compras</h1>
+          <p className="text-lg text-slate-600">
+            Revisa tus paquetes seleccionados
+          </p>
         </div>
-        <div className="border-t border-gray-200">
-          <ul className="divide-y divide-gray-200">
-            {cart.items.map((item) => (
-              <li key={item.id} className="px-4 py-4 sm:px-6">
-                <div className="flex items-center justify-between">
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-900 truncate">
-                      {item.product.name}
-                    </p>
-                    <p className="text-sm text-gray-500">
-                      ${item.product.price} x {item.quantity}
-                    </p>
-                  </div>
-                  <div className="flex items-center space-x-4">
-                    <div className="flex items-center">
-                      <button
-                        onClick={() =>
-                          handleUpdateQuantity(item.id, item.quantity - 1)
-                        }
-                        className="text-gray-500 hover:text-gray-700"
-                        disabled={item.quantity <= 1}
-                      >
-                        -
-                      </button>
-                      <span className="mx-2">{item.quantity}</span>
-                      <button
-                        onClick={() =>
-                          handleUpdateQuantity(item.id, item.quantity + 1)
-                        }
-                        className="text-gray-500 hover:text-gray-700"
-                      >
-                        +
-                      </button>
-                    </div>
-                    <button
-                      onClick={() => handleRemoveItem(item.id)}
-                      className="text-red-600 hover:text-red-900"
-                    >
-                      Eliminar
-                    </button>
-                  </div>
-                </div>
-              </li>
-            ))}
-          </ul>
-        </div>
-        <div className="px-4 py-5 sm:px-6">
-          <div className="flex justify-between items-center">
-            <div>
-              <p className="text-lg font-medium text-gray-900">
-                Total: ${cart.total}
-              </p>
-            </div>
+
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-8 text-red-700">
+            {error}
+          </div>
+        )}
+
+        {cart.length === 0 ? (
+          <div className="text-center py-12">
+            <p className="text-slate-600 mb-8">Tu carrito está vacío</p>
             <button
-              onClick={handleCheckout}
-              disabled={checkoutLoading}
-              className={`bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 ${
-                checkoutLoading ? "opacity-50 cursor-not-allowed" : ""
-              }`}
+              onClick={() => navigate('/')}
+              className="btn-primary"
             >
-              {checkoutLoading ? (
-                <div className="flex items-center">
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                  Procesando...
-                </div>
-              ) : (
-                "Proceder al pago"
-              )}
+              Ver Paquetes
             </button>
           </div>
-        </div>
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="lg:col-span-2">
+              <div className="bg-white rounded-xl shadow-lg border border-slate-200">
+                <div className="p-6">
+                  <div className="space-y-6">
+                    {cart.map((item) => (
+                      <div key={item.id} className="flex items-center space-x-4">
+                        <div className="flex-1">
+                          <h3 className="text-lg font-medium text-slate-800">{item.product.name}</h3>
+                          <p className="text-slate-600">{item.product.description}</p>
+                        </div>
+                        <div className="flex items-center space-x-4">
+                          <div className="flex items-center space-x-2">
+                            <button
+                              onClick={() => handleQuantityChange(item.productId, item.quantity - 1)}
+                              className="w-8 h-8 flex items-center justify-center border border-slate-200 rounded-lg hover:bg-slate-50"
+                            >
+                              -
+                            </button>
+                            <span className="w-8 text-center">{item.quantity}</span>
+                            <button
+                              onClick={() => handleQuantityChange(item.productId, item.quantity + 1)}
+                              className="w-8 h-8 flex items-center justify-center border border-slate-200 rounded-lg hover:bg-slate-50"
+                            >
+                              +
+                            </button>
+                          </div>
+                          <p className="text-lg font-medium text-slate-900">
+                            ${(item.product.price * item.quantity * 1000).toLocaleString('es-AR')}
+                          </p>
+                          <button
+                            onClick={() => removeFromCart(item.productId)}
+                            className="text-red-600 hover:text-red-700"
+                          >
+                            Eliminar
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="lg:col-span-1">
+              <div className="bg-white rounded-xl shadow-lg border border-slate-200 p-6">
+                <h2 className="text-lg font-medium text-slate-800 mb-4">Resumen del Pedido</h2>
+                <div className="space-y-4">
+                  <div className="flex justify-between text-slate-600">
+                    <span>Subtotal</span>
+                    <span>${(total * 1000).toLocaleString('es-AR')}</span>
+                  </div>
+                  <div className="flex justify-between text-slate-600">
+                    <span>Impuestos</span>
+                    <span>${(total * 1000 * 0.21).toLocaleString('es-AR')}</span>
+                  </div>
+                  <div className="border-t border-slate-200 pt-4">
+                    <div className="flex justify-between text-lg font-medium text-slate-900">
+                      <span>Total</span>
+                      <span>${(total * 1000 * 1.21).toLocaleString('es-AR')}</span>
+                    </div>
+                  </div>
+                  <button
+                    onClick={handleCheckout}
+                    disabled={loading}
+                    className="btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {loading ? 'Procesando...' : 'Finalizar Compra'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -14,9 +14,9 @@ const router = express.Router();
 router.get("/", getProducts);
 router.get("/:id", getProduct);
 
-// Rutas protegidas (solo admin)
-router.post("/", auth, checkRole(["SALES_MANAGER"]), createProduct);
-router.put("/:id", auth, checkRole(["SALES_MANAGER"]), updateProduct);
-router.delete("/:id", auth, checkRole(["SALES_MANAGER"]), deleteProduct);
+// Rutas protegidas (solo admin y sales manager)
+router.post("/", auth, checkRole(["SALES_MANAGER", "ADMIN"]), createProduct);
+router.put("/:id", auth, checkRole(["SALES_MANAGER", "ADMIN"]), updateProduct);
+router.delete("/:id", auth, checkRole(["SALES_MANAGER", "ADMIN"]), deleteProduct);
 
 module.exports = router;

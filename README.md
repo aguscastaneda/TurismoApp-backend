@@ -105,3 +105,12 @@ npm run dev
 
 La base de datos que utiliza el sistema se llama @olimpiadas.sql" y esta ubicada en:
 "C:\Users\agust\OneDrive\Documentos"
+
+## Code para commitear 
+
+cd "/c/Users/agust/OneDrive/Escritorio/olimpiadaas"
+git status
+git add .
+git commit -m ""
+git pull
+git push
