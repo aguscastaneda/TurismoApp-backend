@@ -38,3 +38,6 @@ Thumbs.db
 /prisma/*.db-journal "backend/prisma/.env"    # por si no estaba
 
 /frontend/.env
+
+.env
+**/.env
