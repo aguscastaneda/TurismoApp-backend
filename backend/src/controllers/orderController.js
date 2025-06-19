@@ -1,6 +1,5 @@
 const { PrismaClient } = require("@prisma/client");
-const { Preference } = require("mercadopago");
-const mp = require("../config/mercadopago");
+const { MercadoPagoConfig, Preference } = require('mercadopago');
 
 // Inicializar Prisma
 const prisma = new PrismaClient();
@@ -9,6 +8,12 @@ const prisma = new PrismaClient();
 prisma.$on("error", (e) => {
   console.error("Prisma Error:", e);
 });
+
+const mp = new MercadoPagoConfig({
+  accessToken: process.env.MERCADOPAGO_ACCESS_TOKEN,
+});
+
+const preference = new Preference(mp);
 
 // Crear un nuevo pedido
 const createOrder = async (req, res) => {
@@ -68,8 +73,8 @@ const createOrder = async (req, res) => {
 
     console.log("Orden creada:", order);
 
+    console.log("FRONTEND_URL:", process.env.FRONTEND_URL);
     // Crear pago en MercadoPago con preferencia
-    const preference = new Preference(mp);
     const items = cart.items.map((item) => ({
       id: item.product.id,
       title: item.product.name,
@@ -78,7 +83,19 @@ const createOrder = async (req, res) => {
       currency_id: "ARS",
     }));
 
-    console.log("Creand pago con MP de los items:", items);
+    console.log("Creando pago con MP de los items:", items);
+
+    console.log("Objeto enviado a Mercado Pago:", {
+      items,
+      back_urls: {
+        success: `${process.env.FRONTEND_URL}/orders/${order.id}/success`,
+        failure: `${process.env.FRONTEND_URL}/orders/${order.id}/failure`,
+        pending: `${process.env.FRONTEND_URL}/orders/${order.id}/pending`,
+      },
+      auto_return: "approved",
+      notification_url: `${process.env.BACKEND_URL}/api/orders/webhook`,
+      external_reference: order.id.toString(),
+    });
 
     const preferenceData = await preference.create({
       body: {
@@ -91,7 +108,7 @@ const createOrder = async (req, res) => {
         auto_return: "approved",
         notification_url: `${process.env.BACKEND_URL}/api/orders/webhook`,
         external_reference: order.id.toString(),
-      },
+      }
     });
 
     console.log("Preferencia de MP creada:", preferenceData);
@@ -114,10 +131,8 @@ const createOrder = async (req, res) => {
       paymentUrl: preferenceData.init_point,
     });
   } catch (error) {
-    console.error("Error al crear la orden:", error);
-    res
-      .status(500)
-      .json({ error: "Error al crear la orden: " + error.message });
+    console.error("Error al crear la orden:", error, error?.response?.data);
+    res.status(500).json({ error: "Error al crear la orden: " + error.message, details: error?.response?.data });
   }
 };
 
@@ -127,7 +142,7 @@ const handleWebhook = async (req, res) => {
     const { type, data } = req.body;
 
     if (type === "payment") {
-      const payment = await mp.payment.findById(data.id);
+      const payment = await mercadopago.payment.findById(data.id);
       const orderId = payment.external_reference;
 
       let status;
