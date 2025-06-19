@@ -84,7 +84,7 @@ const Products = () => {
         <div className="text-center mb-12">
           <h1 className="text-5xl font-bold text-slate-800 mb-4">Descubre el Mundo</h1>
           <p className="text-xl text-slate-600 max-w-3xl mx-auto leading-relaxed">
-            Encuentra el viaje perfecto para ti con nuestras opciones
+            Encuentra el viaje perfecto con nuestras opciones
             <span className="text-emerald-600 font-semibold"> low cost</span>,
             <span className="text-amber-600 font-semibold"> medium cost</span> y
             <span className="text-purple-600 font-semibold"> high cost</span>

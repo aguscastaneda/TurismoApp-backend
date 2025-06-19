@@ -82,7 +82,7 @@ async function main() {
       description: 'Maravillas naturales con las cataratas más impresionantes del mundo',
       price: 380.00,
       stock: 20,
-      destination: 'Iguazú',
+      destination: 'Iguazu',
       image: 'https://images.unsplash.com/photo-1559128010-7c1ad6e1b6a5?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2073&q=80'
     },
     {
@@ -114,7 +114,7 @@ async function main() {
       description: 'Sierras y cultura en el corazón de Argentina',
       price: 220.00,
       stock: 25,
-      destination: 'Córdoba',
+      destination: 'Cordoba',
       image: 'https://images.unsplash.com/photo-1559128010-7c1ad6e1b6a5?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2073&q=80'
     }
   ];
