@@ -5,6 +5,7 @@ const MyOrders = () => {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [activeTab, setActiveTab] = useState('all');
   const { isAuthenticated } = useAuth();
 
   useEffect(() => {
@@ -68,6 +69,40 @@ const MyOrders = () => {
     });
   };
 
+  const getFilteredOrders = () => {
+    if (activeTab === 'all') return orders;
+    
+    const statusMap = {
+      'pending': 0,
+      'processing': 1,
+      'completed': 2,
+      'cancelled': 3
+    };
+    
+    return orders.filter(order => order.status === statusMap[activeTab]);
+  };
+
+  const getOrderCount = (status) => {
+    const statusMap = {
+      'all': null,
+      'pending': 0,
+      'processing': 1,
+      'completed': 2,
+      'cancelled': 3
+    };
+    
+    if (status === 'all') return orders.length;
+    return orders.filter(order => order.status === statusMap[status]).length;
+  };
+
+  const tabs = [
+    { id: 'all', label: 'Todas', count: getOrderCount('all') },
+    { id: 'pending', label: 'Pendientes', count: getOrderCount('pending') },
+    { id: 'processing', label: 'En Proceso', count: getOrderCount('processing') },
+    { id: 'completed', label: 'Entregados', count: getOrderCount('completed') },
+    { id: 'cancelled', label: 'Cancelados', count: getOrderCount('cancelled') }
+  ];
+
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 py-12 px-4 sm:px-6 lg:px-8">
@@ -107,6 +142,8 @@ const MyOrders = () => {
     );
   }
 
+  const filteredOrders = getFilteredOrders();
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
@@ -115,6 +152,31 @@ const MyOrders = () => {
           <p className="text-lg text-slate-600">
             Historial de tus compras
           </p>
+        </div>
+
+        <div className="mb-8">
+          <div className="flex flex-wrap justify-center gap-2">
+            {tabs.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`px-6 py-3 rounded-lg font-medium transition-all duration-200 flex items-center gap-2 ${
+                  activeTab === tab.id
+                    ? 'bg-blue-600 text-white shadow-lg'
+                    : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
+                }`}
+              >
+                <span>{tab.label}</span>
+                <span className={`px-2 py-1 rounded-full text-xs ${
+                  activeTab === tab.id
+                    ? 'bg-blue-500 text-white'
+                    : 'bg-slate-100 text-slate-600'
+                }`}>
+                  {tab.count}
+                </span>
+              </button>
+            ))}
+          </div>
         </div>
 
         {orders.length === 0 ? (
@@ -127,9 +189,15 @@ const MyOrders = () => {
               Ver Paquetes
             </button>
           </div>
+        ) : filteredOrders.length === 0 ? (
+          <div className="text-center py-12">
+            <p className="text-slate-600 mb-8">
+              No hay órdenes {activeTab !== 'all' ? `en estado "${tabs.find(t => t.id === activeTab)?.label}"` : ''}
+            </p>
+          </div>
         ) : (
           <div className="space-y-6">
-            {orders.map((order) => (
+            {filteredOrders.map((order) => (
               <div key={order.id} className="bg-white rounded-xl shadow-lg border border-slate-200 p-6">
                 <div className="flex justify-between items-start mb-4">
                   <div>

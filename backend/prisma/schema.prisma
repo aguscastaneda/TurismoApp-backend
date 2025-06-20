@@ -76,6 +76,7 @@ model Order {
   userId    Int
   total     Decimal     @db.Decimal(10, 2)
   status    Int         @default(0) @db.TinyInt
+  paymentId String?     @db.VarChar(255)
   createdAt DateTime    @default(now()) @map("createdAt")
   updatedAt DateTime    @updatedAt @map("updatedAt")
   user      User        @relation(fields: [userId], references: [id])

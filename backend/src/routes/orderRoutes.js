@@ -5,6 +5,7 @@ const { checkRole } = require("../middleware/checkRole");
 const {
   createOrder,
   handleWebhook,
+  testWebhook,
   getMyOrders,
   getAllOrders,
   updateOrderStatus,
@@ -13,6 +14,7 @@ const {
 
 // Rutas publicas
 router.post("/webhook", handleWebhook);
+router.post("/test-webhook", testWebhook);
 
 // Todas las rutas requieren autenticacion
 router.use(auth);

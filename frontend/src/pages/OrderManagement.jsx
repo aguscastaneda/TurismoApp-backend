@@ -38,6 +38,8 @@ const OrderManagement = () => {
 
   const handleStatusChange = async (orderId, newStatus) => {
     try {
+      console.log(`Actualizando orden ${orderId} a estado ${newStatus}`);
+      
       const response = await fetch(`${import.meta.env.VITE_API_URL}/api/orders/${orderId}/status`, {
         method: 'PATCH',
         headers: {
@@ -48,12 +50,21 @@ const OrderManagement = () => {
       });
 
       if (!response.ok) {
-        throw new Error('Error al actualizar el estado');
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Error al actualizar el estado');
       }
 
+      const updatedOrder = await response.json();
+      console.log('Orden actualizada:', updatedOrder);
+
+      // Actualizar la lista de órdenes con la orden actualizada
       setOrders(orders.map(order => 
         order.id === orderId ? { ...order, status: parseInt(newStatus) } : order
       ));
+      
+      // Limpiar cualquier error previo
+      setError(null);
+      
     } catch (error) {
       console.error('Error updating order status:', error);
       setError(error.message);

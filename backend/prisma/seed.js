@@ -48,7 +48,7 @@ const products = [
 ];
 
 async function main() {
-  console.log('🌱 Iniciando seed de la base de datos...');
+  console.log('Iniciando seed de la base de datos...');
 
   const orderStatuses = [
     { id: 0, name: 'PENDING' },
@@ -65,7 +65,7 @@ async function main() {
     });
   }
 
-  console.log('✅ Estados de orden creados');
+  console.log('Estados de orden creados');
 
   // Crear productos de ejemplo
   const products = [
@@ -125,7 +125,7 @@ async function main() {
     });
   }
 
-  console.log('✅ Productos creados');
+  console.log('Productos creados');
 
   // Crear usuario admin de ejemplo
   const hashedPassword = await bcrypt.hash('admin123', 10);
@@ -141,7 +141,7 @@ async function main() {
     }
   });
 
-  console.log('✅ Usuario admin creado (admin@example.com / admin123)');
+  console.log('Usuario admin creado (admin@example.com / admin123)');
 
   // Crear usuario cliente de ejemplo
   const clientPassword = await bcrypt.hash('client123', 10);

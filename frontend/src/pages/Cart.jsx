@@ -43,6 +43,11 @@ const Cart = () => {
         throw new Error('Error al procesar la orden');
       }
 
+      const data = await response.json();
+      if (data.paymentUrl) {
+        window.location.href = data.paymentUrl;
+      }
+
       clearCart();
       navigate('/my-orders');
     } catch (error) {
