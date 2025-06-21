@@ -5,12 +5,24 @@ import useWeather from '../hooks/useWeather';
 
 const PackageCard = ({ package: pkg }) => {
   const [people, setPeople] = useState(1);
-  const { addToCart } = useCart();
+  const [isAdding, setIsAdding] = useState(false);
+  const { addToCart, getProductMessage, clearProductMessage } = useCart();
   const { isAuthenticated } = useAuth();
   const { weather, loading: weatherLoading, getWeatherIcon } = useWeather(pkg.destination || 'Buenos Aires');
 
-  const handleAddToCart = () => {
-    addToCart(pkg.id, people);
+  const { success, error } = getProductMessage(pkg.id);
+
+  const handleAddToCart = async () => {
+    if (!isAuthenticated) {
+      return;
+    }
+
+    setIsAdding(true);
+    try {
+      await addToCart(pkg.id, people);
+    } finally {
+      setIsAdding(false);
+    }
   };
 
   const getTypeColor = (price) => {
@@ -170,12 +182,59 @@ const PackageCard = ({ package: pkg }) => {
       </div>
 
       <div className="p-6 pt-0">
+        {/* Mensajes de éxito y error específicos del producto */}
+        {success && (
+          <div className="mb-3 bg-green-50 border border-green-200 rounded-lg p-3 text-green-700 text-sm flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <svg className="h-4 w-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+              <span>{success}</span>
+            </div>
+            <button
+              onClick={() => clearProductMessage(pkg.id)}
+              className="text-green-600 hover:text-green-800"
+            >
+              <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        )}
+        {error && (
+          <div className="mb-3 bg-red-50 border border-red-200 rounded-lg p-3 text-red-700 text-sm flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <svg className="h-4 w-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span>{error}</span>
+            </div>
+            <button
+              onClick={() => clearProductMessage(pkg.id)}
+              className="text-red-600 hover:text-red-800"
+            >
+              <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        )}
+        
         <button
           onClick={handleAddToCart}
-          disabled={!isAuthenticated || pkg.stock === 0}
-          className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+          disabled={!isAuthenticated || pkg.stock === 0 || isAdding}
+          className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
         >
-          {pkg.stock === 0 ? 'Agotado' : 'Agregar al Carrito'}
+          {isAdding ? (
+            <>
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+              <span>Agregando...</span>
+            </>
+          ) : pkg.stock === 0 ? (
+            'Agotado'
+          ) : (
+            'Agregar al Carrito'
+          )}
         </button>
       </div>
     </div>

@@ -17,6 +17,20 @@ const mp = new MercadoPagoConfig({
 const preference = new Preference(mp);
 const payment = new Payment(mp);
 
+// Constantes para estados de orden
+const ORDER_STATUS = {
+  PENDING: 0,
+  PROCESSING: 1,
+  COMPLETED: 2,
+  CANCELLED: 3
+};
+
+// Estados que permiten cancelación
+const CANCELABLE_STATUSES = [
+  ORDER_STATUS.PENDING,    // 0
+  ORDER_STATUS.PROCESSING  // 1
+];
+
 // Crear un nuevo pedido
 const createOrder = async (req, res) => {
   try {
@@ -388,9 +402,11 @@ const updateOrderStatus = async (req, res) => {
     console.log("Actualizando estado de orden:", { orderId, status });
 
     const statusNumber = parseInt(status);
-    if (isNaN(statusNumber) || statusNumber < 0 || statusNumber > 3) {
+    // Validar que el estado esté dentro del rango válido usando constantes
+    const validStatuses = Object.values(ORDER_STATUS);
+    if (isNaN(statusNumber) || !validStatuses.includes(statusNumber)) {
       return res.status(400).json({ 
-        error: "Estado inválido. Debe ser un número entre 0 y 3" 
+        error: `Estado inválido. Debe ser uno de: ${validStatuses.join(', ')}` 
       });
     }
 
@@ -460,10 +476,50 @@ const updateOrderStatus = async (req, res) => {
 const cancelOrder = async (req, res) => {
   try {
     const { orderId } = req.params;
+    const userId = req.user.id;
+    const userRole = req.user.role;
 
-    const order = await prisma.order.update({
+    console.log("Intentando cancelar orden:", { orderId, userId, userRole });
+
+    //Buscar la orden
+    const order = await prisma.order.findUnique({
       where: { id: parseInt(orderId) },
-      data: { status: 3 }, // CANCELLED
+    });
+
+    console.log("Orden encontrada:", order);
+
+    if (!order) {
+      return res.status(404).json({ error: "Orden no encontrada" });
+    }
+
+    // Verificar permisos: solo el propietario o administradores pueden cancelar
+    const isOwner = order.userId === userId;
+    const isAdmin = ["ADMIN", "SALES_MANAGER"].includes(userRole);
+    
+    console.log("Permisos:", { isOwner, isAdmin, orderUserId: order.userId, currentUserId: userId });
+    
+    if (!isOwner && !isAdmin) {
+      return res.status(403).json({ 
+        error: "No tienes permisos para cancelar esta orden. Solo el propietario o administradores pueden cancelarla." 
+      });
+    }
+
+    // Verificar si la orden puede ser cancelada usando constantes descriptivas
+    console.log("Estado actual de la orden:", order.status);
+    console.log("Estados cancelables:", CANCELABLE_STATUSES);
+    
+    if (!CANCELABLE_STATUSES.includes(order.status)) {
+      return res.status(400).json({ 
+        error: "La orden no puede ser cancelada en su estado actual" 
+      });
+    }
+
+    console.log("Actualizando orden a estado CANCELLED (3)");
+
+    // Cambiar estado a CANCELLED
+    const cancelledOrder = await prisma.order.update({
+      where: { id: parseInt(orderId) },
+      data: { status: ORDER_STATUS.CANCELLED },
       include: {
         items: {
           include: {
@@ -474,9 +530,21 @@ const cancelOrder = async (req, res) => {
       },
     });
 
-    res.json(order);
+    console.log("Orden cancelada exitosamente:", cancelledOrder.id);
+
+    // Mensaje personalizado según quién canceló la orden
+    const cancelMessage = isAdmin 
+      ? "Orden cancelada correctamente por administrador"
+      : "Orden cancelada correctamente";
+
+    res.json({
+      message: cancelMessage,
+      order: cancelledOrder,
+      cancelledBy: isAdmin ? "admin" : "owner"
+    });
   } catch (error) {
-    res.status(500).json({ error: "Error al cancelar la orden" });
+    console.error("Error detallado al cancelar la orden:", error);
+    res.status(500).json({ error: "Error al cancelar la orden: " + error.message });
   }
 };
 

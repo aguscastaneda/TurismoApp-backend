@@ -15,6 +15,8 @@ export const CartProvider = ({ children }) => {
   const [cart, setCart] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(null);
+  const [productMessages, setProductMessages] = useState({});
   const auth = useAuth();
 
   useEffect(() => {
@@ -52,10 +54,16 @@ export const CartProvider = ({ children }) => {
   const addToCart = async (productId, quantity = 1) => {
     if (!auth?.isAuthenticated) {
       setError('Debes iniciar sesión para agregar productos al carrito');
-      return;
+      return false;
     }
 
     try {
+      // Limpiar mensajes previos para este producto
+      setProductMessages(prev => ({
+        ...prev,
+        [productId]: { success: null, error: null }
+      }));
+      
       const response = await fetch(`${import.meta.env.VITE_API_URL}/api/cart`, {
         method: 'POST',
         headers: {
@@ -66,13 +74,43 @@ export const CartProvider = ({ children }) => {
       });
 
       if (!response.ok) {
-        throw new Error('Error al agregar al carrito');
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Error al agregar al carrito');
       }
 
       await fetchCart();
+      
+      // Mostrar mensaje de éxito para este producto específico
+      setProductMessages(prev => ({
+        ...prev,
+        [productId]: { 
+          success: `¡Paquete agregado exitosamente al carrito!`, 
+          error: null 
+        }
+      }));
+      
+      // Limpiar mensaje de éxito después de 3 segundos
+      setTimeout(() => {
+        setProductMessages(prev => ({
+          ...prev,
+          [productId]: { success: null, error: null }
+        }));
+      }, 3000);
+      
+      return true;
     } catch (error) {
       console.error('Error adding to cart:', error);
-      setError(error.message);
+      
+      // Mostrar mensaje de error para este producto específico
+      setProductMessages(prev => ({
+        ...prev,
+        [productId]: { 
+          success: null, 
+          error: error.message 
+        }
+      }));
+      
+      return false;
     }
   };
 
@@ -193,16 +231,34 @@ export const CartProvider = ({ children }) => {
     return cart.reduce((total, item) => total + (item.product.price * item.quantity), 0);
   };
 
+  const getProductMessage = (productId) => {
+    return productMessages[productId] || { success: null, error: null };
+  };
+
+  const clearProductMessage = (productId) => {
+    setProductMessages(prev => ({
+      ...prev,
+      [productId]: { success: null, error: null }
+    }));
+  };
+
   const value = {
     cart,
     loading,
     error,
+    success,
     addToCart,
     removeFromCart,
     updateQuantity,
     clearCart,
     getTotal,
-    refreshCart: fetchCart
+    refreshCart: fetchCart,
+    clearMessages: () => {
+      setError(null);
+      setSuccess(null);
+    },
+    getProductMessage,
+    clearProductMessage
   };
 
   return (

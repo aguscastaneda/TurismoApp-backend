@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
-import { Auth0ProviderWithConfig } from "./context/AuthContext";
+import { GoogleOAuthProvider } from '@react-oauth/google';
+import { AuthProvider } from "./context/AuthContext";
 import { CartProvider } from "./context/CartContext";
 import Navbar from "./components/Navbar";
 import Products from "./pages/Products";
@@ -101,14 +102,18 @@ const AppContent = () => {
 };
 
 const App = () => {
+  const GOOGLE_CLIENT_ID = "474698593228-58gn7dgf5635377j1f3frpht94spnp88.apps.googleusercontent.com";
+
   return (
-    <Router>
-      <Auth0ProviderWithConfig>
-        <CartProvider>
-          <AppContent />
-        </CartProvider>
-      </Auth0ProviderWithConfig>
-    </Router>
+    <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
+      <Router>
+        <AuthProvider>
+          <CartProvider>
+            <AppContent />
+          </CartProvider>
+        </AuthProvider>
+      </Router>
+    </GoogleOAuthProvider>
   );
 };
 

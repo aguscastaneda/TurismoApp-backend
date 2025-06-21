@@ -1,40 +1,25 @@
 import { useState } from "react";
-import axios from "axios";
+import { useCart } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext";
 
 const ProductCard = ({ product }) => {
   const [quantity, setQuantity] = useState(1);
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
-  const { user } = useAuth();
+  const [isAdding, setIsAdding] = useState(false);
+  const { addToCart, getProductMessage, clearProductMessage } = useCart();
+  const { isAuthenticated } = useAuth();
+
+  const { success, error } = getProductMessage(product.id);
 
   const handleAddToCart = async () => {
-    if (!user) {
-      setError("Por favor inicia sesion para agregar productos al carrito");
+    if (!isAuthenticated) {
       return;
     }
 
+    setIsAdding(true);
     try {
-      await axios.post(
-        "http://localhost:3000/api/cart",
-        {
-          productId: product.id,
-          quantity,
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-        }
-      );
-      setError("");
-      setSuccess("Producto agregado correctamente!");
-      setTimeout(() => setSuccess(""), 3000); // Se elimina mensaje depsues de 3 segundos
-    } catch (error) {
-      setError(
-        error.response?.data?.error || "Error al agregar el producto al carrito"
-      );
-      console.error("Error al agregar al carrito:", error);
+      await addToCart(product.id, quantity);
+    } finally {
+      setIsAdding(false);
     }
   };
 
@@ -57,16 +42,6 @@ const ProductCard = ({ product }) => {
             {product.stock > 0 ? `Stock: ${product.stock}` : "Sin stock"}
           </span>
         </div>
-        {error && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4">
-            {error}
-          </div>
-        )}
-        {success && (
-          <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4">
-            {success}
-          </div>
-        )}
         <div className="flex items-center space-x-4">
           <div className="flex items-center">
             <button
@@ -99,14 +74,62 @@ const ProductCard = ({ product }) => {
               +
             </button>
           </div>
+          
+          {/* Mensajes de éxito y error específicos del producto */}
+          {success && (
+            <div className="flex-1 bg-green-50 border border-green-200 rounded-lg p-2 text-green-700 text-sm flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <svg className="h-4 w-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                <span>{success}</span>
+              </div>
+              <button
+                onClick={() => clearProductMessage(product.id)}
+                className="text-green-600 hover:text-green-800"
+              >
+                <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+          )}
+          {error && (
+            <div className="flex-1 bg-red-50 border border-red-200 rounded-lg p-2 text-red-700 text-sm flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <svg className="h-4 w-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span>{error}</span>
+              </div>
+              <button
+                onClick={() => clearProductMessage(product.id)}
+                className="text-red-600 hover:text-red-800"
+              >
+                <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+          )}
+          
           <button
             onClick={handleAddToCart}
-            disabled={product.stock === 0}
-            className={`flex-1 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 ${
-              product.stock === 0 ? "opacity-50 cursor-not-allowed" : ""
+            disabled={product.stock === 0 || isAdding}
+            className={`flex-1 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 flex items-center justify-center space-x-2 ${
+              product.stock === 0 || isAdding ? "opacity-50 cursor-not-allowed" : ""
             }`}
           >
-            Agregar al carrito
+            {isAdding ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                <span>Agregando...</span>
+              </>
+            ) : product.stock === 0 ? (
+              'Agotado'
+            ) : (
+              'Agregar al carrito'
+            )}
           </button>
         </div>
       </div>

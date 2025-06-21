@@ -5,7 +5,11 @@ const OrderManagement = () => {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [cancellingOrder, setCancellingOrder] = useState(null);
   const { isAuthenticated, user } = useAuth();
+
+  // Estados que permiten cancelación (según la lógica del backend)
+  const CANCELABLE_STATUSES = [0, 1]; // PENDING, PROCESSING
 
   useEffect(() => {
     const fetchOrders = async () => {
@@ -69,6 +73,49 @@ const OrderManagement = () => {
       console.error('Error updating order status:', error);
       setError(error.message);
     }
+  };
+
+  const handleCancelOrder = async (orderId) => {
+    if (!window.confirm('¿Estás seguro de que quieres cancelar esta orden? Esta acción no se puede deshacer.')) {
+      return;
+    }
+
+    try {
+      setCancellingOrder(orderId);
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/orders/${orderId}/cancel`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Error al cancelar la orden');
+      }
+
+      const result = await response.json();
+      
+      // Actualizar la lista de órdenes con la orden cancelada
+      setOrders(orders.map(order => 
+        order.id === orderId 
+          ? { ...order, status: 3 } // 3 = CANCELLED
+          : order
+      ));
+
+      // Mostrar mensaje de éxito
+      alert(result.message || 'Orden cancelada correctamente');
+      
+    } catch (error) {
+      console.error('Error cancelling order:', error);
+      alert(error.message || 'Error al cancelar la orden');
+    } finally {
+      setCancellingOrder(null);
+    }
+  };
+
+  const canCancelOrder = (order) => {
+    return CANCELABLE_STATUSES.includes(order.status);
   };
 
   const getStatusColor = (status) => {
@@ -213,6 +260,26 @@ const OrderManagement = () => {
                         ${(order.total * 1000).toLocaleString('es-AR')}
                       </p>
                     </div>
+                    
+                    {/* Botón de cancelación para administradores */}
+                    {canCancelOrder(order) && (
+                      <div className="mt-4 flex justify-end">
+                        <button
+                          onClick={() => handleCancelOrder(order.id)}
+                          disabled={cancellingOrder === order.id}
+                          className="bg-red-600 hover:bg-red-700 disabled:bg-red-400 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200 flex items-center gap-2"
+                        >
+                          {cancellingOrder === order.id ? (
+                            <>
+                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                              Cancelando...
+                            </>
+                          ) : (
+                            'Cancelar Orden'
+                          )}
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
