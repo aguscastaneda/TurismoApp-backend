@@ -25,7 +25,7 @@ const ORDER_STATUS = {
   CANCELLED: 3
 };
 
-// Estados que permiten cancelación
+// Estados que permiten cancelacion
 const CANCELABLE_STATUSES = [
   ORDER_STATUS.PENDING,    // 0
   ORDER_STATUS.PROCESSING  // 1
@@ -56,12 +56,20 @@ const createOrder = async (req, res) => {
     console.log("Items carrito:", cart.items);
 
     // Calcular el total
-    const total = cart.items.reduce(
+    const subtotal = cart.items.reduce(
       (sum, item) => sum + Number(item.product.price) * item.quantity,
       0
     );
 
-    console.log("Total calculado:", total);
+    // Calcular impuestos (21%)
+    const taxes = subtotal * 0.21;
+    
+    // Total con impuestos
+    const total = subtotal + taxes;
+
+    console.log("Subtotal:", subtotal);
+    console.log("Impuestos (21%):", taxes);
+    console.log("Total con impuestos:", total);
 
     // Crear el pedido
     const order = await prisma.order.create({
@@ -73,7 +81,7 @@ const createOrder = async (req, res) => {
           create: cart.items.map((item) => ({
             productId: item.productId,
             quantity: item.quantity,
-            price: item.product.price,
+            price: item.product.price * 1.21, // Precio con impuestos incluidos
           })),
         },
       },
@@ -95,7 +103,7 @@ const createOrder = async (req, res) => {
       id: item.product.id,
       title: item.product.name,
       quantity: item.quantity,
-      unit_price: Number(item.product.price),
+      unit_price: Number(item.product.price) * 1.21, // Precio con impuestos incluidos
       currency_id: "ARS",
     }));
 
@@ -142,7 +150,7 @@ const createOrder = async (req, res) => {
 
     console.log("Carrito vaciado y orden completada");
 
-    // Enviar email de confirmación de orden creada
+    // Enviar email de confirmacion de orden creada
     try {
       const orderWithUser = await prisma.order.findUnique({
         where: { id: order.id },
@@ -206,7 +214,7 @@ const handleWebhook = async (req, res) => {
           status = 2; // COMPLETED
           console.log("Pago aprobado, actualizando orden a COMPLETED");
           
-          // Obtener la orden con información del usuario para enviar email
+          // Obtener la orden con informacion del usuario para enviar email
           const order = await prisma.order.findUnique({
             where: { id: parseInt(orderId) },
             include: {
@@ -222,7 +230,7 @@ const handleWebhook = async (req, res) => {
           console.log("Orden encontrada:", order ? `ID ${order.id}` : "No encontrada");
           console.log("Usuario:", order?.user?.email || "Sin email");
 
-          // Enviar email de confirmación si la orden existe
+          // Enviar email de confirmacion si la orden existe
           if (order && order.user.email) {
             try {
               await sendPurchaseEmail(order.user.email, {
@@ -235,9 +243,9 @@ const handleWebhook = async (req, res) => {
                   price: item.price
                 }))
               });
-              console.log(`Email de confirmación enviado a ${order.user.email}`);
+              console.log(`Email de confirmacion enviado a ${order.user.email}`);
             } catch (emailError) {
-              console.error("Error al enviar email de confirmación:", emailError);
+              console.error("Error al enviar email de confirmacion:", emailError);
             }
           }
           
@@ -325,7 +333,7 @@ const testWebhook = async (req, res) => {
             price: item.price
           }))
         });
-        console.log(`Email de confirmación enviado a ${order.user.email}`);
+        console.log(`Email de confirmacion enviado a ${order.user.email}`);
       } catch (emailError) {
         console.error("Error al enviar email:", emailError);
       }
@@ -402,15 +410,15 @@ const updateOrderStatus = async (req, res) => {
     console.log("Actualizando estado de orden:", { orderId, status });
 
     const statusNumber = parseInt(status);
-    // Validar que el estado esté dentro del rango válido usando constantes
+    // Validar que el estado este dentro del rango valido usando constantes
     const validStatuses = Object.values(ORDER_STATUS);
     if (isNaN(statusNumber) || !validStatuses.includes(statusNumber)) {
       return res.status(400).json({ 
-        error: `Estado inválido. Debe ser uno de: ${validStatuses.join(', ')}` 
+        error: `Estado invalido. Debe ser uno de: ${validStatuses.join(', ')}` 
       });
     }
 
-    // Verificar que la orden existe y obtener información del usuario
+    // Verificar que la orden existe y obtener informacion del usuario
     const existingOrder = await prisma.order.findUnique({
       where: { id: parseInt(orderId) },
       include: {
@@ -444,7 +452,7 @@ const updateOrderStatus = async (req, res) => {
 
     console.log("Orden actualizada exitosamente:", order.id);
 
-    // Enviar email de actualización de estado si el usuario tiene email
+    // Enviar email de actualizacion de estado si el usuario tiene email
     if (existingOrder.user && existingOrder.user.email) {
       try {
         await sendOrderStatusUpdateEmail(existingOrder.user.email, {
@@ -457,9 +465,9 @@ const updateOrderStatus = async (req, res) => {
             price: item.price
           }))
         }, statusNumber);
-        console.log(`Email de actualización de estado enviado a ${existingOrder.user.email}`);
+        console.log(`Email de actualizacion de estado enviado a ${existingOrder.user.email}`);
       } catch (emailError) {
-        console.error("Error al enviar email de actualización de estado:", emailError);
+        console.error("Error al enviar email de actualizacion de estado:", emailError);
       }
     }
 
@@ -532,7 +540,7 @@ const cancelOrder = async (req, res) => {
 
     console.log("Orden cancelada exitosamente:", cancelledOrder.id);
 
-    // Mensaje personalizado según quién canceló la orden
+    // Mensaje personalizado segun quien cancelo la orden
     const cancelMessage = isAdmin 
       ? "Orden cancelada correctamente por administrador"
       : "Orden cancelada correctamente";

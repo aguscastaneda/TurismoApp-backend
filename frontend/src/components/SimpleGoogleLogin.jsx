@@ -47,7 +47,7 @@ const SimpleGoogleLogin = ({ onSuccess, onFailure, buttonText = "Continuar con G
       <button
         onClick={() => login()}
         disabled={loading}
-        className="w-full border border-slate-200 hover:bg-slate-50 font-medium py-2.5 rounded-lg transition-colors duration-200 flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
+        className="w-full btn-outline flex items-center justify-center space-x-3 disabled:opacity-50 disabled:cursor-not-allowed"
       >
         <svg className="w-5 h-5" viewBox="0 0 24 24">
           <path
