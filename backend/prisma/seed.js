@@ -18,6 +18,15 @@ async function main() {
   await prisma.orderStatus.deleteMany();
   await prisma.user.deleteMany();
   
+  // Reiniciar AUTO_INCREMENT en todas las tablas principales
+  await prisma.$executeRaw`ALTER TABLE \`User\` AUTO_INCREMENT = 1`;
+  await prisma.$executeRaw`ALTER TABLE \`Product\` AUTO_INCREMENT = 1`;
+  await prisma.$executeRaw`ALTER TABLE \`Cart\` AUTO_INCREMENT = 1`;
+  await prisma.$executeRaw`ALTER TABLE \`CartItem\` AUTO_INCREMENT = 1`;
+  await prisma.$executeRaw`ALTER TABLE \`Order\` AUTO_INCREMENT = 1`;
+  await prisma.$executeRaw`ALTER TABLE \`OrderItem\` AUTO_INCREMENT = 1`;
+  // Si tienes más tablas con autoincrement, agrégalas aquí
+  
   // Reactivar restricciones de clave foránea
   await prisma.$executeRaw`SET FOREIGN_KEY_CHECKS = 1`;
   
@@ -42,115 +51,361 @@ async function main() {
   // Crear productos de ejemplo
   console.log('🏖️ Creando paquetes turísticos...');
   const products = [
+    // Bariloche
     {
-      name: 'Buenos Aires - Bariloche',
-      description: 'Aventura en la Patagonia con vistas espectaculares de los lagos y montañas. Disfruta del esquí en invierno y senderismo en verano.',
-      price: 450.00,
-      stock: 15,
+      name: 'Buenos Aires - Bariloche (Básico)',
+      description: 'Solo viaje: Vuelo directo a Bariloche para que armes tu propia aventura en la Patagonia.',
+      price: 250.00,
+      stock: 10,
       destination: 'Bariloche',
       image: '/images/bariloche.jpg'
     },
     {
-      name: 'Buenos Aires - Iguazú',
-      description: 'Maravillas naturales con las cataratas más impresionantes del mundo. Experiencia única en la selva misionera.',
-      price: 380.00,
-      stock: 20,
+      name: 'Buenos Aires - Bariloche (Con alojamiento)',
+      description: 'Viaje + alojamiento: Vuelo y hotel boutique frente al lago Nahuel Huapi. Incluye desayuno.',
+      price: 350.00,
+      stock: 10,
+      destination: 'Bariloche',
+      image: '/images/bariloche.jpg'
+    },
+    {
+      name: 'Buenos Aires - Bariloche (Aventura)',
+      description: 'Viaje + alojamiento + excursión: Vuelo, hotel y excursión guiada al Cerro Catedral. Incluye traslados.',
+      price: 450.00,
+      stock: 8,
+      destination: 'Bariloche',
+      image: '/images/bariloche.jpg'
+    },
+    {
+      name: 'Buenos Aires - Bariloche (Full Experience)',
+      description: 'Viaje + alojamiento + vehículo + excursión: Vuelo, hotel, alquiler de auto y excursión a los Siete Lagos.',
+      price: 600.00,
+      stock: 5,
+      destination: 'Bariloche',
+      image: '/images/bariloche.jpg'
+    },
+    // Iguazú
+    {
+      name: 'Buenos Aires - Iguazú (Básico)',
+      description: 'Solo viaje: Vuelo a la selva misionera para explorar a tu manera.',
+      price: 180.00,
+      stock: 10,
       destination: 'Iguazú',
       image: '/images/iguazujpg.jpg'
     },
     {
-      name: 'Buenos Aires - Mendoza',
-      description: 'Ruta del vino con degustaciones y paisajes de montaña. Visita bodegas tradicionales y disfruta de la gastronomía local.',
-      price: 320.00,
-      stock: 12,
+      name: 'Buenos Aires - Iguazú (Con alojamiento)',
+      description: 'Viaje + alojamiento: Vuelo y eco-lodge en plena selva. Incluye desayuno buffet.',
+      price: 280.00,
+      stock: 10,
+      destination: 'Iguazú',
+      image: '/images/iguazujpg.jpg'
+    },
+    {
+      name: 'Buenos Aires - Iguazú (Aventura)',
+      description: 'Viaje + alojamiento + excursión: Vuelo, eco-lodge y excursión a las Cataratas con paseo en lancha.',
+      price: 380.00,
+      stock: 8,
+      destination: 'Iguazú',
+      image: '/images/iguazujpg.jpg'
+    },
+    // Mendoza
+    {
+      name: 'Buenos Aires - Mendoza (Básico)',
+      description: 'Solo viaje: Vuelo a la tierra del sol y el buen vino.',
+      price: 150.00,
+      stock: 10,
       destination: 'Mendoza',
       image: '/images/mendoza.jpeg'
     },
     {
-      name: 'Buenos Aires - Salta',
-      description: 'Cultura y tradición en el norte argentino. Explora la Quebrada de Humahuaca y la rica historia colonial.',
-      price: 280.00,
-      stock: 18,
+      name: 'Buenos Aires - Mendoza (Con alojamiento)',
+      description: 'Viaje + alojamiento: Vuelo y hotel céntrico. Incluye desayuno y copa de bienvenida.',
+      price: 220.00,
+      stock: 10,
+      destination: 'Mendoza',
+      image: '/images/mendoza.jpeg'
+    },
+    {
+      name: 'Buenos Aires - Mendoza (Con auto)',
+      description: 'Viaje + alojamiento + vehículo: Vuelo, hotel y alquiler de auto para recorrer bodegas.',
+      price: 320.00,
+      stock: 8,
+      destination: 'Mendoza',
+      image: '/images/mendoza.jpeg'
+    },
+    // Salta
+    {
+      name: 'Buenos Aires - Salta (Básico)',
+      description: 'Solo viaje: Vuelo al norte argentino para descubrir la cultura salteña.',
+      price: 120.00,
+      stock: 10,
       destination: 'Salta',
       image: '/images/salta.jpg'
     },
     {
-      name: 'Buenos Aires - Ushuaia',
-      description: 'Fin del mundo con glaciares y pingüinos. Aventura en la Tierra del Fuego con paisajes únicos.',
-      price: 650.00,
+      name: 'Buenos Aires - Salta (Con alojamiento)',
+      description: 'Viaje + alojamiento: Vuelo y casona colonial en el centro histórico. Incluye desayuno regional.',
+      price: 200.00,
+      stock: 10,
+      destination: 'Salta',
+      image: '/images/salta.jpg'
+    },
+    {
+      name: 'Buenos Aires - Salta (Aventura)',
+      description: 'Viaje + alojamiento + excursión: Vuelo, casona colonial y excursión a la Quebrada de Humahuaca.',
+      price: 280.00,
       stock: 8,
+      destination: 'Salta',
+      image: '/images/salta.jpg'
+    },
+    {
+      name: 'Buenos Aires - Salta (Con auto)',
+      description: 'Viaje + alojamiento + vehículo: Vuelo, casona colonial y alquiler de auto para recorrer los Valles Calchaquíes.',
+      price: 350.00,
+      stock: 5,
+      destination: 'Salta',
+      image: '/images/salta.jpg'
+    },
+    // Ushuaia
+    {
+      name: 'Buenos Aires - Ushuaia (Básico)',
+      description: 'Solo viaje: Vuelo al fin del mundo para tu propia aventura.',
+      price: 400.00,
+      stock: 5,
       destination: 'Ushuaia',
       image: '/images/ushuaiajpg.jpg'
     },
     {
-      name: 'Buenos Aires - Córdoba',
-      description: 'Sierras y cultura en el corazón de Argentina. Disfruta de las sierras cordobesas y la vida nocturna estudiantil.',
-      price: 220.00,
-      stock: 25,
+      name: 'Buenos Aires - Ushuaia (Con alojamiento)',
+      description: 'Viaje + alojamiento: Vuelo y hotel con vista al canal Beagle. Incluye desayuno.',
+      price: 500.00,
+      stock: 5,
+      destination: 'Ushuaia',
+      image: '/images/ushuaiajpg.jpg'
+    },
+    {
+      name: 'Buenos Aires - Ushuaia (Aventura)',
+      description: 'Viaje + alojamiento + excursión: Vuelo, hotel y excursión a glaciares y pingüinera.',
+      price: 600.00,
+      stock: 4,
+      destination: 'Ushuaia',
+      image: '/images/ushuaiajpg.jpg'
+    },
+    {
+      name: 'Buenos Aires - Ushuaia (Full Experience)',
+      description: 'Viaje + alojamiento + vehículo + excursión: Vuelo, hotel, alquiler de 4x4 y excursión a glaciares.',
+      price: 750.00,
+      stock: 2,
+      destination: 'Ushuaia',
+      image: '/images/ushuaiajpg.jpg'
+    },
+    // Córdoba
+    {
+      name: 'Buenos Aires - Córdoba (Básico)',
+      description: 'Solo viaje: Vuelo a la Docta para disfrutar de las sierras y la cultura.',
+      price: 90.00,
+      stock: 15,
       destination: 'Córdoba',
       image: '/images/cordoba.jpg'
     },
     {
-      name: 'Buenos Aires - Río de Janeiro',
-      description: 'Carnaval, playas y samba en la ciudad maravillosa. Experiencia brasileña completa con Copacabana e Ipanema.',
-      price: 580.00,
+      name: 'Buenos Aires - Córdoba (Con alojamiento)',
+      description: 'Viaje + alojamiento: Vuelo y hotel céntrico. Incluye desayuno.',
+      price: 150.00,
       stock: 10,
+      destination: 'Córdoba',
+      image: '/images/cordoba.jpg'
+    },
+    // Río de Janeiro
+    {
+      name: 'Buenos Aires - Río de Janeiro (Básico)',
+      description: 'Solo viaje: Vuelo a la ciudad maravillosa para vivir el carnaval a tu manera.',
+      price: 350.00,
+      stock: 8,
       destination: 'Río de Janeiro',
       image: '/images/rio-janeiro.jpg'
     },
     {
-      name: 'Buenos Aires - Santiago de Chile',
-      description: 'Capital chilena con viñedos y montañas. Disfruta de la cultura chilena y los vinos del Valle del Maipo.',
-      price: 420.00,
-      stock: 14,
+      name: 'Buenos Aires - Río de Janeiro (Con alojamiento)',
+      description: 'Viaje + alojamiento: Vuelo y hotel en Copacabana. Incluye desayuno.',
+      price: 450.00,
+      stock: 8,
+      destination: 'Río de Janeiro',
+      image: '/images/rio-janeiro.jpg'
+    },
+    {
+      name: 'Buenos Aires - Río de Janeiro (Aventura)',
+      description: 'Viaje + alojamiento + excursión: Vuelo, hotel y tour guiado al Cristo Redentor y Pan de Azúcar.',
+      price: 580.00,
+      stock: 6,
+      destination: 'Río de Janeiro',
+      image: '/images/rio-janeiro.jpg'
+    },
+    // Santiago de Chile
+    {
+      name: 'Buenos Aires - Santiago de Chile (Básico)',
+      description: 'Solo viaje: Vuelo a la capital chilena para explorar viñedos y montañas.',
+      price: 200.00,
+      stock: 8,
       destination: 'Santiago de Chile',
       image: '/images/santiago-chile.jpg'
     },
     {
-      name: 'Buenos Aires - Lima',
-      description: 'Gastronomía peruana y cultura inca. Explora la ciudad de los reyes y sus sabores únicos.',
-      price: 480.00,
-      stock: 12,
+      name: 'Buenos Aires - Santiago de Chile (Con alojamiento)',
+      description: 'Viaje + alojamiento: Vuelo y hotel boutique en el centro. Incluye desayuno.',
+      price: 300.00,
+      stock: 8,
+      destination: 'Santiago de Chile',
+      image: '/images/santiago-chile.jpg'
+    },
+    {
+      name: 'Buenos Aires - Santiago de Chile (Con auto)',
+      description: 'Viaje + alojamiento + vehículo: Vuelo, hotel y alquiler de auto para recorrer el Valle del Maipo.',
+      price: 420.00,
+      stock: 6,
+      destination: 'Santiago de Chile',
+      image: '/images/santiago-chile.jpg'
+    },
+    // Lima
+    {
+      name: 'Buenos Aires - Lima (Básico)',
+      description: 'Solo viaje: Vuelo a la ciudad de los reyes para descubrir la cultura peruana.',
+      price: 250.00,
+      stock: 8,
       destination: 'Lima',
       image: '/images/lima.jpeg'
     },
     {
-      name: 'Buenos Aires - Bogotá',
-      description: 'Capital colombiana con historia y modernidad. Descubre la cultura cafetera y la arquitectura colonial.',
-      price: 520.00,
+      name: 'Buenos Aires - Lima (Con alojamiento)',
+      description: 'Viaje + alojamiento: Vuelo y hotel en Miraflores. Incluye desayuno.',
+      price: 350.00,
       stock: 8,
+      destination: 'Lima',
+      image: '/images/lima.jpeg'
+    },
+    {
+      name: 'Buenos Aires - Lima (Gourmet)',
+      description: 'Viaje + alojamiento + excursión: Vuelo, hotel y tour culinario por los mejores restaurantes y mercados.',
+      price: 480.00,
+      stock: 6,
+      destination: 'Lima',
+      image: '/images/lima.jpeg'
+    },
+    // Bogotá
+    {
+      name: 'Buenos Aires - Bogotá (Básico)',
+      description: 'Solo viaje: Vuelo a la capital colombiana para explorar museos y cultura cafetera.',
+      price: 320.00,
+      stock: 6,
       destination: 'Bogotá',
       image: '/images/bogota.jpeg'
     },
     {
-      name: 'Buenos Aires - Ciudad de México',
-      description: 'Cultura azteca y modernidad mexicana. Explora el Zócalo, Teotihuacán y la gastronomía local.',
-      price: 550.00,
-      stock: 10,
+      name: 'Buenos Aires - Bogotá (Con alojamiento)',
+      description: 'Viaje + alojamiento: Vuelo y hotel céntrico. Incluye desayuno típico.',
+      price: 420.00,
+      stock: 6,
+      destination: 'Bogotá',
+      image: '/images/bogota.jpeg'
+    },
+    // Ciudad de México
+    {
+      name: 'Buenos Aires - Ciudad de México (Básico)',
+      description: 'Solo viaje: Vuelo a la capital azteca para descubrir su historia y gastronomía.',
+      price: 350.00,
+      stock: 6,
       destination: 'Ciudad de México',
       image: '/images/mexico.jpg'
     },
     {
-      name: 'Buenos Aires - Nueva York',
-      description: 'La ciudad que nunca duerme. Times Square, Central Park y la Estatua de la Libertad te esperan.',
-      price: 1200.00,
+      name: 'Buenos Aires - Ciudad de México (Con alojamiento)',
+      description: 'Viaje + alojamiento: Vuelo y hotel en el Zócalo. Incluye desayuno.',
+      price: 450.00,
       stock: 6,
+      destination: 'Ciudad de México',
+      image: '/images/mexico.jpg'
+    },
+    {
+      name: 'Buenos Aires - Ciudad de México (Aventura)',
+      description: 'Viaje + alojamiento + excursión: Vuelo, hotel y excursión a Teotihuacán y Xochimilco con guía.',
+      price: 550.00,
+      stock: 4,
+      destination: 'Ciudad de México',
+      image: '/images/mexico.jpg'
+    },
+    // Nueva York
+    {
+      name: 'Buenos Aires - Nueva York (Básico)',
+      description: 'Solo viaje: Vuelo a la ciudad que nunca duerme para vivir tu propia película.',
+      price: 900.00,
+      stock: 4,
       destination: 'Nueva York',
       image: '/images/new-york.jpg'
     },
     {
-      name: 'Buenos Aires - París',
-      description: 'La ciudad del amor y la luz. Torre Eiffel, Louvre y los Campos Elíseos en la capital francesa.',
-      price: 1400.00,
-      stock: 5,
+      name: 'Buenos Aires - Nueva York (Con alojamiento)',
+      description: 'Viaje + alojamiento: Vuelo y hotel en Manhattan. Incluye desayuno.',
+      price: 1100.00,
+      stock: 4,
+      destination: 'Nueva York',
+      image: '/images/new-york.jpg'
+    },
+    {
+      name: 'Buenos Aires - Nueva York (Con auto)',
+      description: 'Viaje + alojamiento + vehículo: Vuelo, hotel y alquiler de auto para recorrer la ciudad y sus alrededores.',
+      price: 1200.00,
+      stock: 2,
+      destination: 'Nueva York',
+      image: '/images/new-york.jpg'
+    },
+    // París
+    {
+      name: 'Buenos Aires - París (Básico)',
+      description: 'Solo viaje: Vuelo a la ciudad del amor para descubrir París a tu manera.',
+      price: 1100.00,
+      stock: 2,
       destination: 'París',
       image: '/images/paris.jpg'
     },
     {
-      name: 'Buenos Aires - Tokio',
-      description: 'Tecnología y tradición japonesa. Sumérgete en la cultura del sol naciente con templos y neón.',
+      name: 'Buenos Aires - París (Con alojamiento)',
+      description: 'Viaje + alojamiento: Vuelo y hotel cerca de la Torre Eiffel. Incluye desayuno.',
+      price: 1250.00,
+      stock: 2,
+      destination: 'París',
+      image: '/images/paris.jpg'
+    },
+    {
+      name: 'Buenos Aires - París (Romántico)',
+      description: 'Viaje + alojamiento + excursión: Vuelo, hotel y tour guiado por el Louvre y Montmartre.',
+      price: 1400.00,
+      stock: 1,
+      destination: 'París',
+      image: '/images/paris.jpg'
+    },
+    // Tokio
+    {
+      name: 'Buenos Aires - Tokio (Básico)',
+      description: 'Solo viaje: Vuelo a la tierra del sol naciente para vivir la cultura japonesa.',
+      price: 1500.00,
+      stock: 1,
+      destination: 'Tokio',
+      image: '/images/tokio.jpg'
+    },
+    {
+      name: 'Buenos Aires - Tokio (Con alojamiento)',
+      description: 'Viaje + alojamiento: Vuelo y hotel en Shibuya. Incluye desayuno.',
+      price: 1650.00,
+      stock: 1,
+      destination: 'Tokio',
+      image: '/images/tokio.jpg'
+    },
+    {
+      name: 'Buenos Aires - Tokio (Cultural)',
+      description: 'Viaje + alojamiento + excursión: Vuelo, hotel y excursión guiada a templos y barrios tradicionales.',
       price: 1800.00,
-      stock: 4,
+      stock: 1,
       destination: 'Tokio',
       image: '/images/tokio.jpg'
     }

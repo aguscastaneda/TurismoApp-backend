@@ -66,16 +66,12 @@ const AppContent = () => {
 
   return (
     <div className="min-h-screen gradient-bg">
-      {isAuthenticated && <Navbar />}
+      <Navbar />
       <main>
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
-          <Route path="/" element={
-            <PrivateRoute>
-              <Products />
-            </PrivateRoute>
-          } />
+          <Route path="/" element={<Products />} />
           <Route path="/cart" element={
             <PrivateRoute>
               <Cart />

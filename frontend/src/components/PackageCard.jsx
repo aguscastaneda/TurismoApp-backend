@@ -3,6 +3,7 @@ import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { useCurrency } from '../context/CurrencyContext';
 import useWeather from '../hooks/useWeather';
+import { useNavigate } from 'react-router-dom';
 
 const PackageCard = ({ package: pkg }) => {
   const [people, setPeople] = useState(1);
@@ -11,8 +12,13 @@ const PackageCard = ({ package: pkg }) => {
   const { isAuthenticated } = useAuth();
   const { convertPrice, formatPrice } = useCurrency();
   const { weather, loading: weatherLoading, getWeatherIcon } = useWeather(pkg.destination || 'Buenos Aires');
+  const navigate = useNavigate();
 
   const handleAddToCart = () => {
+    if (!isAuthenticated) {
+      navigate('/login');
+      return;
+    }
     addToCart(pkg.id, people);
     setShowSuccess(true);
     setTimeout(() => setShowSuccess(false), 3000); // Ocultar después de 3 segundos
@@ -216,7 +222,7 @@ const PackageCard = ({ package: pkg }) => {
           </div>
           <button
             onClick={handleAddToCart}
-            disabled={!isAuthenticated || pkg.stock === 0}
+            disabled={pkg.stock === 0}
             className="w-full btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {pkg.stock === 0 ? 'Agotado' : 'Agregar al Carrito'}

@@ -58,7 +58,7 @@ const sendPurchaseEmail = async (email, orderDetails) => {
   const mailOptions = {
     from: process.env.EMAIL_USER,
     to: email,
-    subject: "¡Compra exitosa! - Olimpiadas Turismo",
+    subject: "¡Compra exitosa! - TurismoApp",
     html: `
       <div style="max-width: 600px; margin: 0 auto; padding: 20px; font-family: Arial, sans-serif; background-color: #f9fafb;">
         <div style="background-color: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
@@ -106,7 +106,7 @@ const sendPurchaseEmail = async (email, orderDetails) => {
           
           <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
             <p style="color: #9ca3af; font-size: 14px;">
-              Gracias por elegir Olimpiadas Turismo
+              Gracias por elegir TurismoApp
             </p>
           </div>
         </div>
@@ -143,7 +143,7 @@ const sendOrderStatusUpdateEmail = async (email, orderDetails, newStatus) => {
   const mailOptions = {
     from: process.env.EMAIL_USER,
     to: email,
-    subject: `Actualización de orden #${orderDetails.id} - Olimpiadas Turismo`,
+    subject: `Actualización de orden #${orderDetails.id} - TurismoApp`,
     html: `
       <div style="max-width: 600px; margin: 0 auto; padding: 20px; font-family: Arial, sans-serif; background-color: #f9fafb;">
         <div style="background-color: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
@@ -172,7 +172,7 @@ const sendOrderStatusUpdateEmail = async (email, orderDetails, newStatus) => {
           
           <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
             <p style="color: #9ca3af; font-size: 14px;">
-              Gracias por elegir Olimpiadas Turismo
+              Gracias por elegir TurismoApp
             </p>
           </div>
         </div>
@@ -204,7 +204,7 @@ const sendOrderCreatedEmail = async (email, orderDetails) => {
   const mailOptions = {
     from: process.env.EMAIL_USER,
     to: email,
-    subject: "Orden creada - Olimpiadas Turismo",
+    subject: "Orden creada - TurismoApp",
     html: `
       <div style="max-width: 600px; margin: 0 auto; padding: 20px; font-family: Arial, sans-serif; background-color: #f9fafb;">
         <div style="background-color: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
@@ -257,7 +257,7 @@ const sendOrderCreatedEmail = async (email, orderDetails) => {
           
           <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
             <p style="color: #9ca3af; font-size: 14px;">
-              Gracias por elegir Olimpiadas Turismo
+              Gracias por elegir TurismoApp
             </p>
           </div>
         </div>

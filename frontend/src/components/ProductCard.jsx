@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useCart } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext";
 import { useCurrency } from "../context/CurrencyContext";
+import { useNavigate } from 'react-router-dom';
 
 const ProductCard = ({ product }) => {
   const [quantity, setQuantity] = useState(1);
@@ -9,6 +10,7 @@ const ProductCard = ({ product }) => {
   const { addToCart, getProductMessage, clearProductMessage } = useCart();
   const { isAuthenticated } = useAuth();
   const { convertPrice, formatPrice } = useCurrency();
+  const navigate = useNavigate();
 
   const { success, error } = getProductMessage(product.id);
 
@@ -18,9 +20,9 @@ const ProductCard = ({ product }) => {
 
   const handleAddToCart = async () => {
     if (!isAuthenticated) {
+      navigate('/login');
       return;
     }
-
     setIsAdding(true);
     try {
       await addToCart(product.id, quantity);

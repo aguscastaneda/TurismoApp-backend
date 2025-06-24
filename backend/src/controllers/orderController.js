@@ -140,7 +140,7 @@ const createOrder = async (req, res) => {
     // Actualizar el pedido con el ID de preferencia
     await prisma.order.update({
       where: { id: order.id },
-      data: { paymentId: preferenceData.id },
+      data: { paymentId: preferenceData.id, status: 1 }, // status: 1 (PROCESSING)
     });
 
     // Vaciar carrito
@@ -182,7 +182,7 @@ const createOrder = async (req, res) => {
     }
 
     res.status(201).json({
-      order,
+      order: { ...order, status: 1 },
       paymentUrl: preferenceData.init_point,
     });
   } catch (error) {
