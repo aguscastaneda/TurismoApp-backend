@@ -1,14 +1,20 @@
 import { useState } from "react";
 import { useCart } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext";
+import { useCurrency } from "../context/CurrencyContext";
 
 const ProductCard = ({ product }) => {
   const [quantity, setQuantity] = useState(1);
   const [isAdding, setIsAdding] = useState(false);
   const { addToCart, getProductMessage, clearProductMessage } = useCart();
   const { isAuthenticated } = useAuth();
+  const { convertPrice, formatPrice } = useCurrency();
 
   const { success, error } = getProductMessage(product.id);
+
+  // Convertir precio a la moneda seleccionada
+  const convertedPrice = convertPrice(product.price, 'USD');
+  const formattedPrice = formatPrice(convertedPrice);
 
   const handleAddToCart = async () => {
     if (!isAuthenticated) {
@@ -32,7 +38,7 @@ const ProductCard = ({ product }) => {
         <p className="text-gray-600 mb-4">{product.description}</p>
         <div className="flex justify-between items-center mb-4">
           <span className="text-xl font-bold text-gray-900">
-            ${product.price}
+            {formattedPrice}
           </span>
           <span
             className={`text-sm font-medium ${

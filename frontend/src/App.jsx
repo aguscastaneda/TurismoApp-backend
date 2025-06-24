@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-d
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import { AuthProvider } from "./context/AuthContext";
 import { CartProvider } from "./context/CartContext";
+import { CurrencyProvider } from "./context/CurrencyContext";
 import Navbar from "./components/Navbar";
 import Products from "./pages/Products";
 import Login from "./pages/Login";
@@ -109,7 +110,9 @@ const App = () => {
       <Router>
         <AuthProvider>
           <CartProvider>
-            <AppContent />
+            <CurrencyProvider>
+              <AppContent />
+            </CurrencyProvider>
           </CartProvider>
         </AuthProvider>
       </Router>

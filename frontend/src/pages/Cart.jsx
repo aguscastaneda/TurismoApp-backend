@@ -2,17 +2,20 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
+import { useCurrency } from '../context/CurrencyContext';
 
 const Cart = () => {
   const { cart, removeFromCart, updateQuantity, clearCart, getTotal } = useCart();
   const { isAuthenticated } = useAuth();
+  const { convertPrice, formatPrice } = useCurrency();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
   const handleQuantityChange = (productId, newQuantity) => {
-    if (newQuantity < 1) return;
-    updateQuantity(productId, newQuantity);
+    if (newQuantity > 0) {
+      updateQuantity(productId, newQuantity);
+    }
   };
 
   const handleCheckout = async () => {
@@ -71,8 +74,8 @@ const Cart = () => {
               </svg>
               <h1 className="text-4xl font-bold text-gray-800 mb-4">Carrito de Compras</h1>
               <p className="text-lg text-gray-600 mb-8">
-                Inicia sesión para ver tu carrito
-              </p>
+              Inicia sesión para ver tu carrito
+            </p>
             </div>
             <button
               onClick={() => navigate('/login')}
@@ -152,7 +155,7 @@ const Cart = () => {
                             </button>
                           </div>
                           <p className="text-lg font-semibold text-gray-900 min-w-[120px] text-right">
-                            ${(item.product.price * item.quantity * 1000).toLocaleString('es-AR')}
+                            {formatPrice(convertPrice(item.product.price, 'USD') * item.quantity)}
                           </p>
                           <button
                             onClick={() => removeFromCart(item.productId)}
@@ -176,16 +179,16 @@ const Cart = () => {
                 <div className="space-y-4">
                   <div className="flex justify-between text-gray-600">
                     <span>Subtotal</span>
-                    <span>${(total * 1000).toLocaleString('es-AR')}</span>
+                    <span>{formatPrice(convertPrice(total, 'USD'))}</span>
                   </div>
                   <div className="flex justify-between text-gray-600">
                     <span>Impuestos (21%)</span>
-                    <span>${(total * 1000 * 0.21).toLocaleString('es-AR')}</span>
+                    <span>{formatPrice(convertPrice(total * 0.21, 'USD'))}</span>
                   </div>
                   <div className="border-t border-gray-200 pt-4">
                     <div className="flex justify-between text-lg font-semibold text-gray-900">
                       <span>Total</span>
-                      <span className="text-gradient">${(total * 1000 * 1.21).toLocaleString('es-AR')}</span>
+                      <span className="text-gradient">{formatPrice(convertPrice(total * 1.21, 'USD'))}</span>
                     </div>
                   </div>
                   <button

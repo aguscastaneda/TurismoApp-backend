@@ -219,8 +219,8 @@ const OrderManagement = () => {
           </p>
         </div>
 
-        <div className="space-y-6">
-          {orders.map((order) => (
+          <div className="space-y-6">
+            {orders.map((order) => (
             <div key={order.id} className="card p-6 hover:shadow-xl transition-all duration-300">
               <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-6">
                 <div className="flex-1">
@@ -257,8 +257,8 @@ const OrderManagement = () => {
                       <span><strong>Creada:</strong> {formatDate(order.createdAt)}</span>
                     </div>
                   </div>
-                </div>
-              </div>
+                    </div>
+                  </div>
 
               {/* Items de la orden */}
               <div className="mb-6">
@@ -285,7 +285,7 @@ const OrderManagement = () => {
                       <p className="font-semibold text-gray-900">
                         ${((item.quantity || 0) * (item.price || 0)).toLocaleString('es-AR')}
                       </p>
-                    </div>
+                  </div>
                   ))}
                 </div>
               </div>
@@ -304,22 +304,22 @@ const OrderManagement = () => {
                     <option value={2}>Completada</option>
                     <option value={3}>Cancelada</option>
                   </select>
-                </div>
-
+                    </div>
+                    
                 <div className="flex space-x-3">
-                  {canCancelOrder(order) && (
-                    <button
-                      onClick={() => handleCancelOrder(order.id)}
-                      disabled={cancellingOrder === order.id}
+                    {canCancelOrder(order) && (
+                        <button
+                          onClick={() => handleCancelOrder(order.id)}
+                          disabled={cancellingOrder === order.id}
                       className="btn-danger disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
+                        >
                       {cancellingOrder === order.id ? 'Cancelando...' : 'Cancelar Orden'}
-                    </button>
-                  )}
+                        </button>
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            ))}
 
           {orders.length === 0 && (
             <div className="text-center py-16">
@@ -330,8 +330,8 @@ const OrderManagement = () => {
                 <p className="text-gray-600 text-lg">No hay órdenes para gestionar</p>
                 <p className="text-gray-500 text-sm mt-2">Las órdenes aparecerán aquí cuando los clientes realicen compras</p>
               </div>
-            </div>
-          )}
+          </div>
+        )}
         </div>
       </div>
     </div>

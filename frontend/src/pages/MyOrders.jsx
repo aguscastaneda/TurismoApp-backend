@@ -244,16 +244,16 @@ const MyOrders = () => {
               const count = counts[tab] || 0;
               
               return (
-                <button
-                  key={tab}
-                  onClick={() => setActiveTab(tab)}
-                  className={getTabButtonClasses(tab, activeTab === tab)}
-                >
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={getTabButtonClasses(tab, activeTab === tab)}
+              >
                   <span>{tab === 'all' ? 'Todas' : getStatusText(tab.toUpperCase())}</span>
                   <span className="ml-2 px-2 py-1 text-xs font-bold bg-white/80 rounded-full border border-current/20">
                     {count}
                   </span>
-                </button>
+              </button>
               );
             })}
           </div>
@@ -281,22 +281,22 @@ const MyOrders = () => {
             
             return (
               <div key={order.id} className="card p-6">
-                <div className="flex justify-between items-start mb-4">
-                  <div>
+              <div className="flex justify-between items-start mb-4">
+                <div>
                     <h3 className="text-xl font-bold text-gradient">Orden #{order.id}</h3>
                     <p className="text-sm text-gray-500">{formatDate(order.createdAt)}</p>
-                  </div>
+                </div>
                   <div className={`px-3 py-1 text-sm font-medium rounded-full border ${getStatusClasses(orderStatus)}`}>
                     {getStatusText(orderStatus)}
-                  </div>
                 </div>
+              </div>
 
                 <div className="my-4 border-t border-gray-200"></div>
 
-                <div className="space-y-4">
+              <div className="space-y-4">
                   {order.items?.map((item, index) => (
                     <div key={item.id || index} className="flex justify-between items-center p-4 bg-gray-50 rounded-xl border border-gray-100">
-                      <div className="flex items-center space-x-4">
+                    <div className="flex items-center space-x-4">
                         <img 
                           src={item.product?.image || '/images/default.jpg'} 
                           alt={item.product?.name || 'Producto'} 
@@ -305,33 +305,33 @@ const MyOrders = () => {
                             e.target.src = '/images/default.jpg';
                           }}
                         />
-                        <div>
+                      <div>
                           <p className="font-semibold text-gray-800">{item.product?.name || 'Producto desconocido'}</p>
                           <p className="text-sm text-gray-600">
                             {item.quantity || 0} x ${(item.price || 0).toLocaleString('es-AR')}
-                          </p>
+                        </p>
                         </div>
                       </div>
                       <p className="font-semibold text-gray-900">${((item.quantity || 0) * (item.price || 0)).toLocaleString('es-AR')}</p>
-                    </div>
-                  ))}
-                </div>
+                  </div>
+                ))}
+              </div>
 
                 <div className="my-4 border-t border-gray-200"></div>
 
-                <div className="flex justify-between items-center">
+              <div className="flex justify-between items-center">
                   <p className="text-lg font-bold">Total: <span className="text-gradient">${(order.total || 0).toLocaleString('es-AR')}</span></p>
-                  {CANCELABLE_STATUSES.includes(order.status) && (
-                    <button
-                      onClick={() => handleCancelOrder(order.id)}
-                      disabled={cancellingOrder === order.id}
+                {CANCELABLE_STATUSES.includes(order.status) && (
+                  <button
+                    onClick={() => handleCancelOrder(order.id)}
+                    disabled={cancellingOrder === order.id}
                       className="btn-danger disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {cancellingOrder === order.id ? 'Cancelando...' : 'Cancelar Orden'}
-                    </button>
-                  )}
-                </div>
+                  >
+                    {cancellingOrder === order.id ? 'Cancelando...' : 'Cancelar Orden'}
+                  </button>
+                )}
               </div>
+            </div>
             );
           })}
           
@@ -342,9 +342,9 @@ const MyOrders = () => {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
                 </svg>
                 <p className="text-gray-600 text-lg">No tienes órdenes {activeTab === 'all' ? '' : activeTab} aún</p>
-              </div>
-            </div>
-          )}
+        </div>
+          </div>
+        )}
         </div>
       </div>
     </div>

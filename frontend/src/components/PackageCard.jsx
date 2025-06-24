@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
+import { useCurrency } from '../context/CurrencyContext';
 import useWeather from '../hooks/useWeather';
 
 const PackageCard = ({ package: pkg }) => {
@@ -8,6 +9,7 @@ const PackageCard = ({ package: pkg }) => {
   const [showSuccess, setShowSuccess] = useState(false);
   const { addToCart } = useCart();
   const { isAuthenticated } = useAuth();
+  const { convertPrice, formatPrice } = useCurrency();
   const { weather, loading: weatherLoading, getWeatherIcon } = useWeather(pkg.destination || 'Buenos Aires');
 
   const handleAddToCart = () => {
@@ -15,6 +17,12 @@ const PackageCard = ({ package: pkg }) => {
     setShowSuccess(true);
     setTimeout(() => setShowSuccess(false), 3000); // Ocultar después de 3 segundos
   };
+
+  const maxPeople = 8; // Límite fijo de 8 personas
+
+  // Convertir precio a la moneda seleccionada
+  const convertedPrice = convertPrice(pkg.price, 'USD');
+  const formattedPrice = formatPrice(convertedPrice * people);
 
   const getTypeColor = (price) => {
     const priceNum = parseFloat(price);
@@ -51,13 +59,6 @@ const PackageCard = ({ package: pkg }) => {
     if (priceNum <= 300) return "3 estrellas";
     if (priceNum <= 600) return "4 estrellas";
     return "5 estrellas";
-  };
-
-  const maxPeople = 8; // Límite fijo de 8 personas
-
-  // Convertir precio a pesos argentinos (aproximadamente 1 USD = 1000 ARS)
-  const convertToPesos = (price) => {
-    return parseFloat(price) * 1000;
   };
 
   const getDestinationImage = (destination) => {
@@ -211,7 +212,7 @@ const PackageCard = ({ package: pkg }) => {
         {/* Precio y botón */}
         <div className="mt-auto pt-4 border-t border-gray-100">
           <div className="text-3xl font-bold text-gradient mb-4">
-            ${convertToPesos(pkg.price * people).toLocaleString('es-AR')}
+            {formattedPrice}
           </div>
           <button
             onClick={handleAddToCart}
