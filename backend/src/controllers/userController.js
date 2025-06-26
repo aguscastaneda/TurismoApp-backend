@@ -3,6 +3,26 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const prisma = new PrismaClient();
 
+// Helper function to ensure user has a cart
+const ensureUserHasCart = async (userId) => {
+  try {
+    const existingCart = await prisma.cart.findUnique({
+      where: { userId }
+    });
+
+    if (!existingCart) {
+      return await prisma.cart.create({
+        data: { userId }
+      });
+    }
+
+    return existingCart;
+  } catch (error) {
+    console.error("Error ensuring user has cart:", error);
+    throw error;
+  }
+};
+
 // Registrar nuevo usuario
 const register = async (req, res) => {
   try {
@@ -43,34 +63,24 @@ const register = async (req, res) => {
     console.log("Hasheando contraseña...");
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    console.log("Iniciando transacción para crear usuario y carrito...");
-    // Crear usuario y carrito en una transaccion
-    const result = await prisma.$transaction(async (prisma) => {
-      console.log("Creando usuario...");
-      const user = await prisma.user.create({
-        data: {
-          name,
-          email,
-          password: hashedPassword,
-        },
-      });
-      console.log("Usuario creado:", user);
-
-      console.log("Creando carrito...");
-      // Crear carrito para el usuario
-      const cart = await prisma.cart.create({
-        data: {
-          userId: user.id,
-        },
-      });
-      console.log("Carrito creado:", cart);
-
-      return user;
+    console.log("Creando usuario...");
+    const user = await prisma.user.create({
+      data: {
+        name,
+        email,
+        password: hashedPassword,
+      },
     });
+    console.log("Usuario creado:", user);
+
+    console.log("Creando carrito...");
+    // Asegurar que el usuario tenga un carrito
+    await ensureUserHasCart(user.id);
+    console.log("Carrito creado para el usuario");
 
     console.log("Generando token JWT...");
     const token = jwt.sign(
-      { userId: result.id },
+      { userId: user.id },
       process.env.JWT_SECRET,
       { expiresIn: "2h" }
     );
@@ -78,10 +88,10 @@ const register = async (req, res) => {
     console.log("Registro completado exitosamente");
     res.status(201).json({
       user: {
-        id: result.id,
-        name: result.name,
-        email: result.email,
-        role: result.role,
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
       },
       token,
     });
@@ -116,6 +126,9 @@ const login = async (req, res) => {
     if (!isPasswordValid) {
       return res.status(401).json({ error: "Credenciales invalidas" });
     }
+
+    // Asegurar que el usuario tenga un carrito
+    await ensureUserHasCart(user.id);
 
     const token = jwt.sign(
       { userId: user.id },
@@ -192,6 +205,9 @@ const googleAuth = async (req, res) => {
           password: null // Los usuarios de Google no tienen contraseña
         }
       });
+
+      // Asegurar que el usuario tenga un carrito
+      await ensureUserHasCart(user.id);
     } else if (!user.googleId) {
       // Actualizar usuario existente con Google ID
       user = await prisma.user.update({
@@ -199,6 +215,9 @@ const googleAuth = async (req, res) => {
         data: { googleId }
       });
     }
+
+    // Asegurar que el usuario tenga un carrito (por si acaso)
+    await ensureUserHasCart(user.id);
 
     const token = jwt.sign(
       { userId: user.id },

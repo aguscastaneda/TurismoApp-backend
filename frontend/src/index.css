@@ -131,7 +131,17 @@
   }
 
   .glass {
-    @apply bg-white/80 backdrop-blur-sm border border-white/20 shadow-xl;
+    @apply bg-white/90 backdrop-blur-md border border-white/30 shadow-2xl;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(255, 255, 255, 0.1);
+  }
+
+  .auth-form {
+    @apply bg-white/95 backdrop-blur-lg border border-white/40 shadow-2xl;
+    box-shadow: 
+      0 32px 64px -12px rgba(0, 0, 0, 0.3),
+      0 0 0 1px rgba(255, 255, 255, 0.2),
+      0 8px 32px -8px rgba(0, 0, 0, 0.1);
+    border-radius: 1rem;
   }
 
   .gradient-bg {

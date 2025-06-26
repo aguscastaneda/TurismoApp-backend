@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import { AuthProvider } from "./context/AuthContext";
 import { CartProvider } from "./context/CartContext";
@@ -55,6 +55,7 @@ const AdminRoute = ({ children }) => {
 
 const AppContent = () => {
   const { isAuthenticated, isLoading } = useAuth();
+  const location = useLocation();
 
   if (isLoading) {
     return (
@@ -64,10 +65,14 @@ const AppContent = () => {
     );
   }
 
+  // Rutas donde no mostrar la navbar
+  const hideNavbarRoutes = ['/login', '/register'];
+  const shouldHideNavbar = hideNavbarRoutes.includes(location.pathname);
+
   return (
     <div className="min-h-screen gradient-bg">
-      <Navbar />
-      <main>
+      {!shouldHideNavbar && <Navbar />}
+      <main className={!shouldHideNavbar ? "pt-16" : ""}>
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
