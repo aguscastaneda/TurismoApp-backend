@@ -1,42 +1,18 @@
 const { PrismaClient } = require("@prisma/client");
-const { MercadoPagoConfig, Preference, Payment } = require('mercadopago');
-const { sendPurchaseEmail, sendOrderCreatedEmail, sendOrderStatusUpdateEmail } = require('../config/email');
+const { MercadoPagoConfig, Preference, Payment } = require("mercadopago");
+const { sendOrderConfirmationEmail, sendOrderStatusUpdateEmail, sendOrderCreatedEmail } = require("../config/email");
 
-// Inicializar Prisma
 const prisma = new PrismaClient();
 
-// Manejar errores de Prisma
-prisma.$on("error", (e) => {
-  console.error("Prisma Error:", e);
+// Configurar MercadoPago
+const client = new MercadoPagoConfig({ 
+  accessToken: process.env.MERCADOPAGO_ACCESS_TOKEN 
 });
 
-const mp = new MercadoPagoConfig({
-  accessToken: process.env.MERCADOPAGO_ACCESS_TOKEN,
-});
-
-const preference = new Preference(mp);
-const payment = new Payment(mp);
-
-// Constantes para estados de orden
-const ORDER_STATUS = {
-  PENDING: 0,
-  PROCESSING: 1,
-  COMPLETED: 2,
-  CANCELLED: 3
-};
-
-// Estados que permiten cancelacion
-const CANCELABLE_STATUSES = [
-  ORDER_STATUS.PENDING,    // 0
-  ORDER_STATUS.PROCESSING  // 1
-];
-
-// Crear un nuevo pedido
 const createOrder = async (req, res) => {
   try {
     console.log("Creando nuevo pedido para el usuario:", req.user.id);
 
-    // Obtener el carrito del usuario
     const cart = await prisma.cart.findUnique({
       where: { userId: req.user.id },
       include: {
@@ -55,245 +31,221 @@ const createOrder = async (req, res) => {
 
     console.log("Items carrito:", cart.items);
 
-    // Calcular el total
-    const subtotal = cart.items.reduce(
-      (sum, item) => sum + Number(item.product.price) * item.quantity,
-      0
-    );
-
-    // Calcular impuestos (21%)
+    const subtotal = cart.items.reduce((sum, item) => sum + parseFloat(item.product.price) * item.quantity, 0);
     const taxes = subtotal * 0.21;
-    
-    // Total con impuestos
     const total = subtotal + taxes;
 
     console.log("Subtotal:", subtotal);
     console.log("Impuestos (21%):", taxes);
     console.log("Total con impuestos:", total);
 
-    // Crear el pedido
+    // Crear items para MercadoPago incluyendo los impuestos
+    const items = [
+      // Items de productos
+      ...cart.items.map((item) => ({
+        id: item.product.id,
+        title: item.product.name,
+        quantity: item.quantity,
+        unit_price: parseFloat(item.product.price),
+        currency_id: "ARS",
+      })),
+      // Item de impuestos
+      {
+        id: "taxes",
+        title: "Impuestos (21%)",
+        quantity: 1,
+        unit_price: taxes,
+        currency_id: "ARS",
+      }
+    ];
+
     const order = await prisma.order.create({
       data: {
         userId: req.user.id,
-        total,
-        status: 0, // Estado: PENDING
+        total: total.toFixed(2),
+        status: 0,
         items: {
           create: cart.items.map((item) => ({
             productId: item.productId,
             quantity: item.quantity,
-            price: item.product.price * 1.21, // Precio con impuestos incluidos
+            price: parseFloat(item.product.price),
           })),
         },
       },
       include: {
+        user: true,
         items: {
           include: {
             product: true,
           },
         },
-        orderStatus: true,
       },
     });
 
     console.log("Orden creada:", order);
 
     console.log("FRONTEND_URL:", process.env.FRONTEND_URL);
-    // Crear pago en MercadoPago con preferencia
-    const items = cart.items.map((item) => ({
-      id: item.product.id,
-      title: item.product.name,
-      quantity: item.quantity,
-      unit_price: Number(item.product.price) * 1.21, // Precio con impuestos incluidos
-      currency_id: "ARS",
-    }));
+
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5174';
+    const successUrl = `${frontendUrl}/my-orders?success=true`;
+    const failureUrl = `${frontendUrl}/my-orders?failure=true`;
+    const pendingUrl = `${frontendUrl}/my-orders?pending=true`;
 
     console.log("Creando pago con MP de los items:", items);
-
     console.log("Objeto enviado a Mercado Pago:", {
       items,
       back_urls: {
-        success: "https://www.google.com",
-        failure: "https://www.google.com",
-        pending: "https://www.google.com",
+        success: successUrl,
+        failure: failureUrl,
+        pending: pendingUrl,
       },
-      auto_return: "approved",
       notification_url: `${process.env.BACKEND_URL}/api/orders/webhook`,
       external_reference: order.id.toString(),
     });
 
-    const preferenceData = await preference.create({
-      body: {
-        items,
-        back_urls: {
-          success: "https://www.google.com",
-          failure: "https://www.google.com",
-          pending: "https://www.google.com",
-        },
-        auto_return: "approved",
-        notification_url: `${process.env.BACKEND_URL}/api/orders/webhook`,
-        external_reference: order.id.toString(),
-      }
-    });
+    const preference = {
+      items,
+      back_urls: {
+        success: successUrl,
+        failure: failureUrl,
+        pending: pendingUrl,
+      },
+      notification_url: `${process.env.BACKEND_URL}/api/orders/webhook`,
+      external_reference: order.id.toString(),
+    };
+
+    const preferenceData = await new Preference(client).create({ body: preference });
 
     console.log("Preferencia de MP creada:", preferenceData);
 
-    // Actualizar el pedido con el ID de preferencia
+    // Cambiar estado a "Procesando" cuando se crea la preferencia de pago
     await prisma.order.update({
       where: { id: order.id },
-      data: { paymentId: preferenceData.id, status: 1 }, // status: 1 (PROCESSING)
+      data: { status: 1 }, // Procesando
     });
 
-    // Vaciar carrito
     await prisma.cartItem.deleteMany({
       where: { cartId: cart.id },
     });
 
     console.log("Carrito vaciado y orden completada");
 
-    // Enviar email de confirmacion de orden creada
-    try {
-      const orderWithUser = await prisma.order.findUnique({
-        where: { id: order.id },
-        include: {
-          user: true,
-          items: {
-            include: {
-              product: true,
-            },
+    const orderWithUser = await prisma.order.findUnique({
+      where: { id: order.id },
+      include: {
+        user: true,
+        items: {
+          include: {
+            product: true,
           },
         },
-      });
+      },
+    });
 
-      if (orderWithUser && orderWithUser.user.email) {
-        await sendOrderCreatedEmail(orderWithUser.user.email, {
-          id: orderWithUser.id,
-          total: orderWithUser.total,
-          date: orderWithUser.createdAt,
-          items: orderWithUser.items.map(item => ({
-            name: item.product.name,
-            quantity: item.quantity,
-            price: item.price
-          }))
-        });
-        console.log(`Email de orden creada enviado a ${orderWithUser.user.email}`);
-      }
+    try {
+      await sendOrderCreatedEmail(orderWithUser.user.email, orderWithUser);
+      console.log(`Email de orden creada enviado a ${orderWithUser.user.email}`);
     } catch (emailError) {
-      console.error("Error al enviar email de orden creada:", emailError);
+      console.error("Error enviando email de orden creada:", emailError);
     }
 
-    res.status(201).json({
-      order: { ...order, status: 1 },
+    res.json({
+      message: "Orden creada exitosamente",
+      order: {
+        id: order.id,
+        total: order.total,
+        status: 1,
+      },
       paymentUrl: preferenceData.init_point,
     });
   } catch (error) {
-    console.error("Error al crear la orden:", error, error?.response?.data);
-    res.status(500).json({ error: "Error al crear la orden: " + error.message, details: error?.response?.data });
+    console.error("Error creando orden:", error);
+    
+    // Si es un error de MercadoPago, devolver información más específica
+    if (error.message && error.error) {
+      return res.status(400).json({ 
+        error: "Error en la configuración del pago", 
+        details: error.message 
+      });
+    }
+    
+    res.status(500).json({ error: "Error interno del servidor" });
   }
 };
 
-// Manejar webhook de MP
 const handleWebhook = async (req, res) => {
   try {
     console.log("=== WEBHOOK RECIBIDO ===");
     console.log("Body completo:", JSON.stringify(req.body, null, 2));
-    
-    const { type, data } = req.body;
+
+    const { data, type } = req.body;
 
     if (type === "payment") {
       console.log("Procesando pago con ID:", data.id);
-      
-      const paymentData = await payment.findById({ id: data.id });
+
+      const paymentData = await new Payment(client).get({ paymentId: data.id });
       console.log("Datos del pago:", JSON.stringify(paymentData, null, 2));
-      
+
       const orderId = paymentData.external_reference;
       console.log("ID de orden encontrado:", orderId);
 
-      let status;
-      switch (paymentData.status) {
-        case "approved":
-          status = 2; // COMPLETED
-          console.log("Pago aprobado, actualizando orden a COMPLETED");
-          
-          // Obtener la orden con informacion del usuario para enviar email
-          const order = await prisma.order.findUnique({
-            where: { id: parseInt(orderId) },
-            include: {
-              user: true,
-              items: {
-                include: {
-                  product: true,
-                },
+      if (paymentData.status === "approved") {
+        console.log("Pago aprobado, actualizando orden a COMPLETED");
+
+        const order = await prisma.order.update({
+          where: { id: parseInt(orderId) },
+          data: { status: 4 },
+          include: {
+            user: true,
+            items: {
+              include: {
+                product: true,
               },
             },
-          });
+          },
+        });
 
-          console.log("Orden encontrada:", order ? `ID ${order.id}` : "No encontrada");
-          console.log("Usuario:", order?.user?.email || "Sin email");
+        console.log("Orden encontrada:", order ? `ID ${order.id}` : "No encontrada");
+        console.log("Usuario:", order?.user?.email || "Sin email");
 
-          // Enviar email de confirmacion si la orden existe
-          if (order && order.user.email) {
-            try {
-              await sendPurchaseEmail(order.user.email, {
-                id: order.id,
-                total: order.total,
-                date: order.createdAt,
-                items: order.items.map(item => ({
-                  name: item.product.name,
-                  quantity: item.quantity,
-                  price: item.price
-                }))
-              });
-              console.log(`Email de confirmacion enviado a ${order.user.email}`);
-            } catch (emailError) {
-              console.error("Error al enviar email de confirmacion:", emailError);
-            }
-          }
-          
-          break;
-        case "pending":
-          status = 1; // PROCESSING
-          console.log("Pago pendiente, actualizando orden a PROCESSING");
-          break;
-        case "rejected":
-          status = 3; // CANCELLED
-          console.log("Pago rechazado, actualizando orden a CANCELLED");
-          break;
-        default:
-          status = 0; // PENDING
-          console.log("Estado desconocido, manteniendo orden como PENDING");
+        try {
+          await sendOrderConfirmationEmail(order.user.email, order);
+          console.log(`Email de confirmacion enviado a ${order.user.email}`);
+        } catch (emailError) {
+          console.error("Error enviando email de confirmacion:", emailError);
+        }
+      } else if (paymentData.status === "pending") {
+        console.log("Pago pendiente, actualizando orden a PROCESSING");
+        await prisma.order.update({
+          where: { id: parseInt(orderId) },
+          data: { status: 1 },
+        });
+      } else if (paymentData.status === "rejected") {
+        console.log("Pago rechazado, actualizando orden a CANCELLED");
+        await prisma.order.update({
+          where: { id: parseInt(orderId) },
+          data: { status: 3 },
+        });
+      } else {
+        console.log("Estado desconocido, manteniendo orden como PENDING");
       }
-
-      await prisma.order.update({
-        where: { id: parseInt(orderId) },
-        data: { status },
-      });
-      
-      console.log(`Orden ${orderId} actualizada a estado ${status}`);
-    } else {
-      console.log("Tipo de webhook no reconocido:", type);
     }
 
-    res.status(200).send("OK");
+    res.status(200).json({ message: "Webhook procesado correctamente" });
   } catch (error) {
-    console.error("Error en webhook:", error);
-    res.status(500).json({ error: "Error en webhook: " + error.message });
+    console.error("Error procesando webhook:", error);
+    res.status(500).json({ error: "Error procesando webhook" });
   }
 };
 
-// Endpoint de prueba para simular webhook de MP
 const testWebhook = async (req, res) => {
   try {
     const { orderId, status } = req.body;
-    
+
     console.log("=== PRUEBA DE WEBHOOK ===");
     console.log("Orden ID:", orderId);
     console.log("Estado:", status);
-    
-    if (!orderId) {
-      return res.status(400).json({ error: "orderId es requerido" });
-    }
-    
-    // Obtener la orden
+
     const order = await prisma.order.findUnique({
       where: { id: parseInt(orderId) },
       include: {
@@ -305,120 +257,106 @@ const testWebhook = async (req, res) => {
         },
       },
     });
-    
+
     if (!order) {
       return res.status(404).json({ error: "Orden no encontrada" });
     }
-    
+
     console.log("Orden encontrada:", order.id);
     console.log("Usuario:", order.user.email);
-    
-    // Actualizar estado
-    const newStatus = status || 2; // Por defecto COMPLETED
-    await prisma.order.update({
+
+    const updatedOrder = await prisma.order.update({
       where: { id: parseInt(orderId) },
-      data: { status: newStatus },
+      data: { status: parseInt(status) },
+      include: {
+        user: true,
+        items: {
+          include: {
+            product: true,
+          },
+        },
+      },
     });
-    
-    // Enviar email
-    if (order.user.email) {
-      try {
-        await sendPurchaseEmail(order.user.email, {
-          id: order.id,
-          total: order.total,
-          date: order.createdAt,
-          items: order.items.map(item => ({
-            name: item.product.name,
-            quantity: item.quantity,
-            price: item.price
-          }))
-        });
-        console.log(`Email de confirmacion enviado a ${order.user.email}`);
-      } catch (emailError) {
-        console.error("Error al enviar email:", emailError);
-      }
+
+    try {
+      await sendOrderStatusUpdateEmail(order.user.email, updatedOrder, updatedOrder.status);
+      console.log(`Email de confirmacion enviado a ${order.user.email}`);
+    } catch (emailError) {
+      console.error("Error enviando email de actualizacion:", emailError);
     }
-    
-    res.json({ 
-      success: true, 
-      message: `Orden ${orderId} actualizada a estado ${newStatus}`,
-      emailSent: !!order.user.email
+
+    res.json({
+      message: "Estado de orden actualizado correctamente",
+      order: updatedOrder,
     });
-    
   } catch (error) {
-    console.error("Error en test webhook:", error);
-    res.status(500).json({ error: "Error en test webhook: " + error.message });
+    console.error("Error en prueba de webhook:", error);
+    res.status(500).json({ error: "Error interno del servidor" });
   }
 };
 
-// Obtener mis ordenes
-const getMyOrders = async (req, res) => {
+const getOrders = async (req, res) => {
   try {
-    const orders = await prisma.order.findMany({
-      where: { userId: req.user.id },
-      include: {
-        items: {
-          include: {
-            product: true,
+    const { user } = req;
+
+    let orders;
+    if (user.role === "ADMIN" || user.role === "SALES_MANAGER") {
+      orders = await prisma.order.findMany({
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
           },
+          items: {
+            include: {
+              product: true,
+            },
+          },
+          orderStatus: true,
         },
-        orderStatus: true,
-      },
-      orderBy: { createdAt: "desc" },
-    });
+        orderBy: {
+          createdAt: "desc",
+        },
+      });
+    } else {
+      orders = await prisma.order.findMany({
+        where: { userId: user.id },
+        include: {
+          items: {
+            include: {
+              product: true,
+            },
+          },
+          orderStatus: true,
+        },
+        orderBy: {
+          createdAt: "desc",
+        },
+      });
+    }
 
     res.json(orders);
   } catch (error) {
-    res.status(500).json({ error: "Error al obtener las ordenes" });
+    console.error("Error obteniendo ordenes:", error);
+    res.status(500).json({ error: "Error interno del servidor" });
   }
 };
 
-// Obtener todas las ordenes (admin)
-const getAllOrders = async (req, res) => {
-  try {
-    const orders = await prisma.order.findMany({
-      include: {
-        user: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-          },
-        },
-        items: {
-          include: {
-            product: true,
-          },
-        },
-        orderStatus: true,
-      },
-      orderBy: { createdAt: "desc" },
-    });
-
-    res.json(orders);
-  } catch (error) {
-    res.status(500).json({ error: "Error al obtener las ordenes" });
-  }
-};
-
-// Actualizar estado de la orden (admin)
 const updateOrderStatus = async (req, res) => {
   try {
     const { orderId } = req.params;
     const { status } = req.body;
+    const { user } = req;
 
     console.log("Actualizando estado de orden:", { orderId, status });
 
-    const statusNumber = parseInt(status);
-    // Validar que el estado este dentro del rango valido usando constantes
-    const validStatuses = Object.values(ORDER_STATUS);
-    if (isNaN(statusNumber) || !validStatuses.includes(statusNumber)) {
-      return res.status(400).json({ 
-        error: `Estado invalido. Debe ser uno de: ${validStatuses.join(', ')}` 
-      });
+    if (user.role !== "ADMIN" && user.role !== "SALES_MANAGER") {
+      return res.status(403).json({ error: "No tienes permisos para actualizar ordenes" });
     }
 
-    // Verificar que la orden existe y obtener informacion del usuario
     const existingOrder = await prisma.order.findUnique({
       where: { id: parseInt(orderId) },
       include: {
@@ -428,70 +366,62 @@ const updateOrderStatus = async (req, res) => {
             product: true,
           },
         },
-      }
+      },
     });
 
     if (!existingOrder) {
-      return res.status(404).json({ 
-        error: "Orden no encontrada" 
-      });
+      return res.status(404).json({ error: "Orden no encontrada" });
+    }
+
+    const validStatuses = [0, 1, 2, 3, 4];
+    if (!validStatuses.includes(parseInt(status))) {
+      return res.status(400).json({ error: "Estado invalido" });
     }
 
     const order = await prisma.order.update({
       where: { id: parseInt(orderId) },
-      data: { status: statusNumber },
+      data: { status: parseInt(status) },
       include: {
+        user: true,
         items: {
           include: {
             product: true,
           },
         },
-        orderStatus: true,
       },
     });
 
     console.log("Orden actualizada exitosamente:", order.id);
 
-    // Enviar email de actualizacion de estado si el usuario tiene email
-    if (existingOrder.user && existingOrder.user.email) {
-      try {
-        await sendOrderStatusUpdateEmail(existingOrder.user.email, {
-          id: order.id,
-          total: order.total,
-          date: order.createdAt,
-          items: existingOrder.items.map(item => ({
-            name: item.product.name,
-            quantity: item.quantity,
-            price: item.price
-          }))
-        }, statusNumber);
-        console.log(`Email de actualizacion de estado enviado a ${existingOrder.user.email}`);
-      } catch (emailError) {
-        console.error("Error al enviar email de actualizacion de estado:", emailError);
-      }
+    try {
+      await sendOrderStatusUpdateEmail(order.user.email, order, order.status);
+      console.log(`Email de actualizacion de estado enviado a ${existingOrder.user.email}`);
+    } catch (emailError) {
+      console.error("Error enviando email de actualizacion:", emailError);
     }
 
-    res.json(order);
-  } catch (error) {
-    console.error("Error al actualizar el estado de la orden:", error);
-    res.status(500).json({ 
-      error: "Error al actualizar el estado de la orden: " + error.message 
+    res.json({
+      message: "Estado de orden actualizado correctamente",
+      order,
     });
+  } catch (error) {
+    console.error("Error actualizando estado de orden:", error);
+    res.status(500).json({ error: "Error interno del servidor" });
   }
 };
 
-// Cancelar orden
 const cancelOrder = async (req, res) => {
   try {
     const { orderId } = req.params;
-    const userId = req.user.id;
-    const userRole = req.user.role;
+    const { user } = req;
 
-    console.log("Intentando cancelar orden:", { orderId, userId, userRole });
+    console.log("Intentando cancelar orden:", { orderId, userId: user.id, userRole: user.role });
 
-    //Buscar la orden
     const order = await prisma.order.findUnique({
       where: { id: parseInt(orderId) },
+      include: {
+        user: true,
+      },
     });
 
     console.log("Orden encontrada:", order);
@@ -500,59 +430,56 @@ const cancelOrder = async (req, res) => {
       return res.status(404).json({ error: "Orden no encontrada" });
     }
 
-    // Verificar permisos: solo el propietario o administradores pueden cancelar
-    const isOwner = order.userId === userId;
-    const isAdmin = ["ADMIN", "SALES_MANAGER"].includes(userRole);
-    
-    console.log("Permisos:", { isOwner, isAdmin, orderUserId: order.userId, currentUserId: userId });
-    
+    const isOwner = order.userId === user.id;
+    const isAdmin = user.role === "ADMIN" || user.role === "SALES_MANAGER";
+
+    console.log("Permisos:", { isOwner, isAdmin, orderUserId: order.userId, currentUserId: user.id });
+
     if (!isOwner && !isAdmin) {
-      return res.status(403).json({ 
-        error: "No tienes permisos para cancelar esta orden. Solo el propietario o administradores pueden cancelarla." 
-      });
+      return res.status(403).json({ error: "No tienes permisos para cancelar esta orden" });
     }
 
-    // Verificar si la orden puede ser cancelada usando constantes descriptivas
+    const CANCELABLE_STATUSES = [0, 1];
+
     console.log("Estado actual de la orden:", order.status);
     console.log("Estados cancelables:", CANCELABLE_STATUSES);
-    
+
     if (!CANCELABLE_STATUSES.includes(order.status)) {
       return res.status(400).json({ 
-        error: "La orden no puede ser cancelada en su estado actual" 
+        error: "No se puede cancelar una orden que ya fue procesada o cancelada" 
       });
     }
 
     console.log("Actualizando orden a estado CANCELLED (3)");
 
-    // Cambiar estado a CANCELLED
     const cancelledOrder = await prisma.order.update({
       where: { id: parseInt(orderId) },
-      data: { status: ORDER_STATUS.CANCELLED },
+      data: { status: 3 },
       include: {
+        user: true,
         items: {
           include: {
             product: true,
           },
         },
-        orderStatus: true,
       },
     });
 
     console.log("Orden cancelada exitosamente:", cancelledOrder.id);
 
-    // Mensaje personalizado segun quien cancelo la orden
-    const cancelMessage = isAdmin 
-      ? "Orden cancelada correctamente por administrador"
-      : "Orden cancelada correctamente";
+    try {
+      await sendOrderStatusUpdateEmail(cancelledOrder.user.email, cancelledOrder, cancelledOrder.status);
+    } catch (emailError) {
+      console.error("Error enviando email de cancelacion:", emailError);
+    }
 
     res.json({
-      message: cancelMessage,
+      message: "Orden cancelada exitosamente",
       order: cancelledOrder,
-      cancelledBy: isAdmin ? "admin" : "owner"
     });
   } catch (error) {
-    console.error("Error detallado al cancelar la orden:", error);
-    res.status(500).json({ error: "Error al cancelar la orden: " + error.message });
+    console.error("Error cancelando orden:", error);
+    res.status(500).json({ error: "Error interno del servidor" });
   }
 };
 
@@ -560,8 +487,7 @@ module.exports = {
   createOrder,
   handleWebhook,
   testWebhook,
-  getMyOrders,
-  getAllOrders,
+  getOrders,
   updateOrderStatus,
   cancelOrder,
 };

@@ -3,10 +3,10 @@ const bcrypt = require("bcryptjs");
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log('🌱 Iniciando seed de la base de datos...');
+  console.log('Iniciando seed de la base de datos...');
 
   // Limpiar la base de datos
-  console.log('🧹 Limpiando base de datos...');
+  console.log('Limpiando base de datos...');
   
   // Desactivar restricciones de clave foránea temporalmente
   await prisma.$executeRaw`SET FOREIGN_KEY_CHECKS = 0`;
@@ -25,15 +25,14 @@ async function main() {
   await prisma.$executeRaw`ALTER TABLE \`CartItem\` AUTO_INCREMENT = 1`;
   await prisma.$executeRaw`ALTER TABLE \`Order\` AUTO_INCREMENT = 1`;
   await prisma.$executeRaw`ALTER TABLE \`OrderItem\` AUTO_INCREMENT = 1`;
-  // Si tienes más tablas con autoincrement, agrégalas aquí
   
   // Reactivar restricciones de clave foránea
   await prisma.$executeRaw`SET FOREIGN_KEY_CHECKS = 1`;
   
-  console.log('✅ Base de datos limpiada');
+  console.log('Base de datos limpiada');
 
   // Crear estados de orden
-  console.log('📋 Creando estados de orden...');
+  console.log('Creando estados de orden...');
   const orderStatuses = [
     { id: 0, name: 'PENDING' },
     { id: 1, name: 'PROCESSING' },
@@ -46,10 +45,10 @@ async function main() {
       data: status
     });
   }
-  console.log('✅ Estados de orden creados');
+  console.log('Estados de orden creados');
 
   // Crear productos de ejemplo
-  console.log('🏖️ Creando paquetes turísticos...');
+  console.log('Creando paquetes turísticos...');
   const products = [
     // Bariloche
     {
@@ -416,10 +415,10 @@ async function main() {
       data: product
     });
   }
-  console.log(`✅ ${products.length} paquetes turísticos creados`);
+  console.log(`${products.length} paquetes turísticos creados`);
 
-  // Crear usuario admin de ejemplo
-  console.log('👨‍💼 Creando usuario administrador...');
+  // Crear credenciales
+  console.log('Creando usuario administrador...');
   const hashedPassword = await bcrypt.hash('admin123', 10);
   
   await prisma.user.create({
@@ -430,10 +429,9 @@ async function main() {
       role: 'ADMIN'
     }
   });
-  console.log('✅ Usuario admin creado (admin@example.com / admin123)');
+  console.log('Usuario admin creado (admin@example.com / admin123)');
 
-  // Crear usuario cliente de ejemplo
-  console.log('👤 Creando usuario cliente...');
+  console.log('Creando usuario cliente...');
   const clientPassword = await bcrypt.hash('client123', 10);
   
   await prisma.user.create({
@@ -444,23 +442,14 @@ async function main() {
       role: 'CLIENT'
     }
   });
-  console.log('✅ Usuario cliente creado (client@example.com / client123)');
+  console.log('Usuario cliente creado (client@example.com / client123)');
 
-  console.log('🎉 ¡Seed completado exitosamente!');
-  console.log('');
-  console.log('📊 Resumen:');
-  console.log(`   • ${orderStatuses.length} estados de orden`);
-  console.log(`   • ${products.length} paquetes turísticos`);
-  console.log('   • 2 usuarios de ejemplo');
-  console.log('');
-  console.log('🔑 Credenciales:');
-  console.log('   Admin: admin@example.com / admin123');
-  console.log('   Cliente: client@example.com / client123');
+  console.log('Seed completado exitosamente!');
 }
 
 main()
   .catch((e) => {
-    console.error('❌ Error durante el seed:', e);
+    console.error('Error durante el seed:', e);
     process.exit(1);
   })
   .finally(async () => {

@@ -28,7 +28,7 @@ const getExchangeRates = async (req, res) => {
   try {
     // Siempre usar EUR como base
     const base = 'EUR';
-    // Verificar si tenemos cache válido
+    // Verificar si tenemos cache valido
     const now = Date.now();
     if (exchangeRatesCache && lastCacheUpdate && (now - lastCacheUpdate) < CACHE_DURATION) {
       return res.json({
@@ -58,7 +58,7 @@ const getExchangeRates = async (req, res) => {
         message: "Tasas simuladas - Configura FIXER_API_KEY para tasas reales"
       });
     }
-    // Hacer petición a Fixer.io
+    // Hacer peticion a Fixer.io
     const response = await axios.get(`https://data.fixer.io/api/latest`, {
       params: {
         access_key: apiKey,
@@ -101,7 +101,7 @@ const getExchangeRates = async (req, res) => {
   }
 };
 
-// Convertir un monto específico
+// Convertir un monto especifico
 const convertCurrency = async (req, res) => {
   try {
     const { amount, from, to } = req.query;
@@ -130,7 +130,7 @@ const convertCurrency = async (req, res) => {
       query: { from, to, amount: parseFloat(amount) }
     });
   } catch (error) {
-    // Fallback a conversión simulada
+    // Fallback a conversion simulada
     const { amount, from, to } = req.query;
     const fromRate = mockExchangeRates[from] || 1;
     const toRate = mockExchangeRates[to] || 1;
@@ -150,7 +150,7 @@ const getAvailableCurrencies = async (req, res) => {
     const apiKey = process.env.FIXER_API_KEY;
     
     if (!apiKey || apiKey === "26b2e203275b8d6d253c1fa72dbc0890") {
-      // Devolver símbolos simulados
+      // Devolver simbolos simulados
       const mockSymbols = {
         USD: "US Dollar",
         EUR: "Euro",
@@ -196,7 +196,7 @@ const getAvailableCurrencies = async (req, res) => {
   } catch (error) {
     console.error('Error al obtener símbolos:', error);
     
-    // Fallback a símbolos simulados
+    // Fallback a simbolos simulados
     const mockSymbols = {
       USD: "US Dollar",
       EUR: "Euro",

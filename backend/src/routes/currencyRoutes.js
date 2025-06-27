@@ -9,7 +9,7 @@ const {
 // Obtener tasas de cambio
 router.get('/rates', getExchangeRates);
 
-// Convertir moneda específica
+// Convertir moneda especifica
 router.get('/convert', convertCurrency);
 
 // Obtener monedas disponibles

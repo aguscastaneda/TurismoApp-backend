@@ -6,6 +6,8 @@ const productRoutes = require("./routes/productRoutes");
 const cartRoutes = require("./routes/cartRoutes");
 const orderRoutes = require("./routes/orderRoutes");
 const currencyRoutes = require("./routes/currencyRoutes");
+const helpRoutes = require("./routes/helpRoutes");
+const { auth } = require("./middleware/auth");
 
 const app = express();
 
@@ -18,6 +20,7 @@ app.use("/api/products", productRoutes);
 app.use("/api/cart", cartRoutes);
 app.use("/api/orders", orderRoutes);
 app.use("/api/currency", currencyRoutes);
+app.use("/api/help", helpRoutes);
 
 // Ruta de prueba
 app.get("/api/test", (req, res) => {

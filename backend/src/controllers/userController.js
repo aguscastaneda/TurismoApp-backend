@@ -3,7 +3,7 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const prisma = new PrismaClient();
 
-// Helper function to ensure user has a cart
+//  Garantizar que el usuario tenga un carrito
 const ensureUserHasCart = async (userId) => {
   try {
     const existingCart = await prisma.cart.findUnique({
@@ -18,7 +18,7 @@ const ensureUserHasCart = async (userId) => {
 
     return existingCart;
   } catch (error) {
-    console.error("Error ensuring user has cart:", error);
+    console.error("Error al garantizar que el usuario tenga carrito:", error);
     throw error;
   }
 };
@@ -29,30 +29,25 @@ const register = async (req, res) => {
     console.log("Datos recibidos:", req.body);
     const { name, email, password } = req.body;
 
-    // Validar campos requeridos
     if (!name || !email || !password) {
       console.log("Campos faltantes:", { name: !name, email: !email, password: !password });
       return res.status(400).json({ error: "Todos los campos son requeridos" });
     }
 
-    // Validar formato de email
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-      console.log("Email inválido:", email);
-      return res.status(400).json({ error: "Formato de email invalido" });
+      console.log("Email invalido:", email);
+      return res.status(400).json({ error: "Email invalido" });
     }
 
-    // Validar longitud de contraseña
     if (password.length < 6) {
       console.log("Contraseña demasiado corta:", password.length);
-      return res
-        .status(400)
-        .json({ error: "La contraseña debe tener al menos 6 caracteres" });
+      return res.status(400).json({ error: "La contraseña debe tener al menos 6 caracteres" });
     }
 
     console.log("Buscando usuario existente con email:", email);
     const existingUser = await prisma.user.findUnique({
-      where: { email },
+      where: { email }
     });
 
     if (existingUser) {
@@ -71,33 +66,36 @@ const register = async (req, res) => {
         password: hashedPassword,
       },
     });
+
     console.log("Usuario creado:", user);
 
     console.log("Creando carrito...");
-    // Asegurar que el usuario tenga un carrito
-    await ensureUserHasCart(user.id);
+    await prisma.cart.create({
+      data: {
+        userId: user.id,
+      },
+    });
+
     console.log("Carrito creado para el usuario");
 
     console.log("Generando token JWT...");
     const token = jwt.sign(
-      { userId: user.id },
+      { userId: user.id, email: user.email },
       process.env.JWT_SECRET,
       { expiresIn: "2h" }
     );
 
+    const { password: _, ...userWithoutPassword } = user;
+
     console.log("Registro completado exitosamente");
     res.status(201).json({
-      user: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-      },
+      message: "Usuario registrado exitosamente",
       token,
+      user: userWithoutPassword,
     });
   } catch (error) {
-    console.error("Error detallado en registro:", error);
-    res.status(500).json({ error: "Error al registrar usuario" });
+    console.error("Error en registro:", error);
+    res.status(500).json({ error: "Error interno del servidor" });
   }
 };
 
