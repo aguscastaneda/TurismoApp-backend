@@ -10,7 +10,7 @@ const helpRoutes = require("./routes/helpRoutes");
 const app = express();
 
 // CORS configuration
-const cors = require('cors');
+
 app.use(cors({
   origin: ['https://turismo21.site', 'https://www.turismo21.site'], // tu frontend
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
