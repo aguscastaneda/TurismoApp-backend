@@ -5,32 +5,6 @@ const prisma = new PrismaClient();
 async function main() {
   console.log('Iniciando seed de la base de datos...');
 
-  // Limpiar la base de datos
-  console.log('Limpiando base de datos...');
-  
-  // Desactivar restricciones de clave foránea temporalmente
-  await prisma.$executeRaw`SET FOREIGN_KEY_CHECKS = 0`;
-  
-  // Eliminar todos los datos
-  await prisma.orderItem.deleteMany();
-  await prisma.order.deleteMany();
-  await prisma.product.deleteMany();
-  await prisma.orderStatus.deleteMany();
-  await prisma.user.deleteMany();
-  
-  // Reiniciar AUTO_INCREMENT en todas las tablas principales
-  await prisma.$executeRaw`ALTER TABLE \`User\` AUTO_INCREMENT = 1`;
-  await prisma.$executeRaw`ALTER TABLE \`Product\` AUTO_INCREMENT = 1`;
-  await prisma.$executeRaw`ALTER TABLE \`Cart\` AUTO_INCREMENT = 1`;
-  await prisma.$executeRaw`ALTER TABLE \`CartItem\` AUTO_INCREMENT = 1`;
-  await prisma.$executeRaw`ALTER TABLE \`Order\` AUTO_INCREMENT = 1`;
-  await prisma.$executeRaw`ALTER TABLE \`OrderItem\` AUTO_INCREMENT = 1`;
-  
-  // Reactivar restricciones de clave foránea
-  await prisma.$executeRaw`SET FOREIGN_KEY_CHECKS = 1`;
-  
-  console.log('Base de datos limpiada');
-
   // Crear estados de orden
   console.log('Creando estados de orden...');
   const orderStatuses = [
@@ -41,8 +15,10 @@ async function main() {
   ];
 
   for (const status of orderStatuses) {
-    await prisma.orderStatus.create({
-      data: status
+    await prisma.orderStatus.upsert({
+      where: { id: status.id },
+      update: status,
+      create: status
     });
   }
   console.log('Estados de orden creados');
@@ -56,7 +32,6 @@ async function main() {
       description: 'Solo viaje: Vuelo directo a Bariloche para que armes tu propia aventura en la Patagonia.',
       price: 250.00,
       stock: 10,
-      destination: 'Bariloche',
       image: '/images/bariloche.jpg'
     },
     {
@@ -64,7 +39,6 @@ async function main() {
       description: 'Viaje + alojamiento: Vuelo y hotel boutique frente al lago Nahuel Huapi. Incluye desayuno.',
       price: 350.00,
       stock: 10,
-      destination: 'Bariloche',
       image: '/images/bariloche.jpg'
     },
     {
@@ -72,7 +46,6 @@ async function main() {
       description: 'Viaje + alojamiento + excursión: Vuelo, hotel y excursión guiada al Cerro Catedral. Incluye traslados.',
       price: 450.00,
       stock: 8,
-      destination: 'Bariloche',
       image: '/images/bariloche.jpg'
     },
     {
@@ -80,7 +53,6 @@ async function main() {
       description: 'Viaje + alojamiento + vehículo + excursión: Vuelo, hotel, alquiler de auto y excursión a los Siete Lagos.',
       price: 600.00,
       stock: 5,
-      destination: 'Bariloche',
       image: '/images/bariloche.jpg'
     },
     // Iguazú
@@ -89,7 +61,6 @@ async function main() {
       description: 'Solo viaje: Vuelo a la selva misionera para explorar a tu manera.',
       price: 180.00,
       stock: 10,
-      destination: 'Iguazú',
       image: '/images/iguazujpg.jpg'
     },
     {
@@ -97,7 +68,6 @@ async function main() {
       description: 'Viaje + alojamiento: Vuelo y eco-lodge en plena selva. Incluye desayuno buffet.',
       price: 280.00,
       stock: 10,
-      destination: 'Iguazú',
       image: '/images/iguazujpg.jpg'
     },
     {
@@ -105,7 +75,6 @@ async function main() {
       description: 'Viaje + alojamiento + excursión: Vuelo, eco-lodge y excursión a las Cataratas con paseo en lancha.',
       price: 380.00,
       stock: 8,
-      destination: 'Iguazú',
       image: '/images/iguazujpg.jpg'
     },
     // Mendoza
@@ -114,7 +83,6 @@ async function main() {
       description: 'Solo viaje: Vuelo a la tierra del sol y el buen vino.',
       price: 150.00,
       stock: 10,
-      destination: 'Mendoza',
       image: '/images/mendoza.jpeg'
     },
     {
@@ -122,7 +90,6 @@ async function main() {
       description: 'Viaje + alojamiento: Vuelo y hotel céntrico. Incluye desayuno y copa de bienvenida.',
       price: 220.00,
       stock: 10,
-      destination: 'Mendoza',
       image: '/images/mendoza.jpeg'
     },
     {
@@ -130,7 +97,6 @@ async function main() {
       description: 'Viaje + alojamiento + vehículo: Vuelo, hotel y alquiler de auto para recorrer bodegas.',
       price: 320.00,
       stock: 8,
-      destination: 'Mendoza',
       image: '/images/mendoza.jpeg'
     },
     // Salta
@@ -139,7 +105,6 @@ async function main() {
       description: 'Solo viaje: Vuelo al norte argentino para descubrir la cultura salteña.',
       price: 120.00,
       stock: 10,
-      destination: 'Salta',
       image: '/images/salta.jpg'
     },
     {
@@ -147,7 +112,6 @@ async function main() {
       description: 'Viaje + alojamiento: Vuelo y casona colonial en el centro histórico. Incluye desayuno regional.',
       price: 200.00,
       stock: 10,
-      destination: 'Salta',
       image: '/images/salta.jpg'
     },
     {
@@ -155,7 +119,6 @@ async function main() {
       description: 'Viaje + alojamiento + excursión: Vuelo, casona colonial y excursión a la Quebrada de Humahuaca.',
       price: 280.00,
       stock: 8,
-      destination: 'Salta',
       image: '/images/salta.jpg'
     },
     {
@@ -163,7 +126,6 @@ async function main() {
       description: 'Viaje + alojamiento + vehículo: Vuelo, casona colonial y alquiler de auto para recorrer los Valles Calchaquíes.',
       price: 350.00,
       stock: 5,
-      destination: 'Salta',
       image: '/images/salta.jpg'
     },
     // Ushuaia
@@ -172,7 +134,6 @@ async function main() {
       description: 'Solo viaje: Vuelo al fin del mundo para tu propia aventura.',
       price: 400.00,
       stock: 5,
-      destination: 'Ushuaia',
       image: '/images/ushuaiajpg.jpg'
     },
     {
@@ -180,7 +141,6 @@ async function main() {
       description: 'Viaje + alojamiento: Vuelo y hotel con vista al canal Beagle. Incluye desayuno.',
       price: 500.00,
       stock: 5,
-      destination: 'Ushuaia',
       image: '/images/ushuaiajpg.jpg'
     },
     {
@@ -188,7 +148,6 @@ async function main() {
       description: 'Viaje + alojamiento + excursión: Vuelo, hotel y excursión a glaciares y pingüinera.',
       price: 600.00,
       stock: 4,
-      destination: 'Ushuaia',
       image: '/images/ushuaiajpg.jpg'
     },
     {
@@ -196,7 +155,6 @@ async function main() {
       description: 'Viaje + alojamiento + vehículo + excursión: Vuelo, hotel, alquiler de 4x4 y excursión a glaciares.',
       price: 750.00,
       stock: 2,
-      destination: 'Ushuaia',
       image: '/images/ushuaiajpg.jpg'
     },
     // Córdoba
@@ -205,7 +163,6 @@ async function main() {
       description: 'Solo viaje: Vuelo a la Docta para disfrutar de las sierras y la cultura.',
       price: 90.00,
       stock: 15,
-      destination: 'Córdoba',
       image: '/images/cordoba.jpg'
     },
     {
@@ -213,7 +170,6 @@ async function main() {
       description: 'Viaje + alojamiento: Vuelo y hotel céntrico. Incluye desayuno.',
       price: 150.00,
       stock: 10,
-      destination: 'Córdoba',
       image: '/images/cordoba.jpg'
     },
     // Río de Janeiro
@@ -222,7 +178,6 @@ async function main() {
       description: 'Solo viaje: Vuelo a la ciudad maravillosa para vivir el carnaval a tu manera.',
       price: 350.00,
       stock: 8,
-      destination: 'Río de Janeiro',
       image: '/images/rio-janeiro.jpg'
     },
     {
@@ -230,7 +185,6 @@ async function main() {
       description: 'Viaje + alojamiento: Vuelo y hotel en Copacabana. Incluye desayuno.',
       price: 450.00,
       stock: 8,
-      destination: 'Río de Janeiro',
       image: '/images/rio-janeiro.jpg'
     },
     {
@@ -238,7 +192,6 @@ async function main() {
       description: 'Viaje + alojamiento + excursión: Vuelo, hotel y tour guiado al Cristo Redentor y Pan de Azúcar.',
       price: 580.00,
       stock: 6,
-      destination: 'Río de Janeiro',
       image: '/images/rio-janeiro.jpg'
     },
     // Santiago de Chile
@@ -247,7 +200,6 @@ async function main() {
       description: 'Solo viaje: Vuelo a la capital chilena para explorar viñedos y montañas.',
       price: 200.00,
       stock: 8,
-      destination: 'Santiago de Chile',
       image: '/images/santiago-chile.jpg'
     },
     {
@@ -255,7 +207,6 @@ async function main() {
       description: 'Viaje + alojamiento: Vuelo y hotel boutique en el centro. Incluye desayuno.',
       price: 300.00,
       stock: 8,
-      destination: 'Santiago de Chile',
       image: '/images/santiago-chile.jpg'
     },
     {
@@ -263,7 +214,6 @@ async function main() {
       description: 'Viaje + alojamiento + vehículo: Vuelo, hotel y alquiler de auto para recorrer el Valle del Maipo.',
       price: 420.00,
       stock: 6,
-      destination: 'Santiago de Chile',
       image: '/images/santiago-chile.jpg'
     },
     // Lima
@@ -272,7 +222,6 @@ async function main() {
       description: 'Solo viaje: Vuelo a la ciudad de los reyes para descubrir la cultura peruana.',
       price: 250.00,
       stock: 8,
-      destination: 'Lima',
       image: '/images/lima.jpeg'
     },
     {
@@ -280,7 +229,6 @@ async function main() {
       description: 'Viaje + alojamiento: Vuelo y hotel en Miraflores. Incluye desayuno.',
       price: 350.00,
       stock: 8,
-      destination: 'Lima',
       image: '/images/lima.jpeg'
     },
     {
@@ -288,7 +236,6 @@ async function main() {
       description: 'Viaje + alojamiento + excursión: Vuelo, hotel y tour culinario por los mejores restaurantes y mercados.',
       price: 480.00,
       stock: 6,
-      destination: 'Lima',
       image: '/images/lima.jpeg'
     },
     // Bogotá
@@ -297,7 +244,6 @@ async function main() {
       description: 'Solo viaje: Vuelo a la capital colombiana para explorar museos y cultura cafetera.',
       price: 320.00,
       stock: 6,
-      destination: 'Bogotá',
       image: '/images/bogota.jpeg'
     },
     {
@@ -305,7 +251,6 @@ async function main() {
       description: 'Viaje + alojamiento: Vuelo y hotel céntrico. Incluye desayuno típico.',
       price: 420.00,
       stock: 6,
-      destination: 'Bogotá',
       image: '/images/bogota.jpeg'
     },
     // Ciudad de México
@@ -314,7 +259,6 @@ async function main() {
       description: 'Solo viaje: Vuelo a la capital azteca para descubrir su historia y gastronomía.',
       price: 350.00,
       stock: 6,
-      destination: 'Ciudad de México',
       image: '/images/mexico.jpg'
     },
     {
@@ -322,7 +266,6 @@ async function main() {
       description: 'Viaje + alojamiento: Vuelo y hotel en el Zócalo. Incluye desayuno.',
       price: 450.00,
       stock: 6,
-      destination: 'Ciudad de México',
       image: '/images/mexico.jpg'
     },
     {
@@ -330,7 +273,6 @@ async function main() {
       description: 'Viaje + alojamiento + excursión: Vuelo, hotel y excursión a Teotihuacán y Xochimilco con guía.',
       price: 550.00,
       stock: 4,
-      destination: 'Ciudad de México',
       image: '/images/mexico.jpg'
     },
     // Nueva York
@@ -339,7 +281,6 @@ async function main() {
       description: 'Solo viaje: Vuelo a la ciudad que nunca duerme para vivir tu propia película.',
       price: 900.00,
       stock: 4,
-      destination: 'Nueva York',
       image: '/images/new-york.jpg'
     },
     {
@@ -347,7 +288,6 @@ async function main() {
       description: 'Viaje + alojamiento: Vuelo y hotel en Manhattan. Incluye desayuno.',
       price: 1100.00,
       stock: 4,
-      destination: 'Nueva York',
       image: '/images/new-york.jpg'
     },
     {
@@ -355,7 +295,6 @@ async function main() {
       description: 'Viaje + alojamiento + vehículo: Vuelo, hotel y alquiler de auto para recorrer la ciudad y sus alrededores.',
       price: 1200.00,
       stock: 2,
-      destination: 'Nueva York',
       image: '/images/new-york.jpg'
     },
     // París
@@ -364,7 +303,6 @@ async function main() {
       description: 'Solo viaje: Vuelo a la ciudad del amor para descubrir París a tu manera.',
       price: 1100.00,
       stock: 2,
-      destination: 'París',
       image: '/images/paris.jpg'
     },
     {
@@ -372,7 +310,6 @@ async function main() {
       description: 'Viaje + alojamiento: Vuelo y hotel cerca de la Torre Eiffel. Incluye desayuno.',
       price: 1250.00,
       stock: 2,
-      destination: 'París',
       image: '/images/paris.jpg'
     },
     {
@@ -380,7 +317,6 @@ async function main() {
       description: 'Viaje + alojamiento + excursión: Vuelo, hotel y tour guiado por el Louvre y Montmartre.',
       price: 1400.00,
       stock: 1,
-      destination: 'París',
       image: '/images/paris.jpg'
     },
     // Tokio
@@ -389,7 +325,6 @@ async function main() {
       description: 'Solo viaje: Vuelo a la tierra del sol naciente para vivir la cultura japonesa.',
       price: 1500.00,
       stock: 1,
-      destination: 'Tokio',
       image: '/images/tokio.jpg'
     },
     {
@@ -397,7 +332,6 @@ async function main() {
       description: 'Viaje + alojamiento: Vuelo y hotel en Shibuya. Incluye desayuno.',
       price: 1650.00,
       stock: 1,
-      destination: 'Tokio',
       image: '/images/tokio.jpg'
     },
     {
@@ -405,7 +339,6 @@ async function main() {
       description: 'Viaje + alojamiento + excursión: Vuelo, hotel y excursión guiada a templos y barrios tradicionales.',
       price: 1800.00,
       stock: 1,
-      destination: 'Tokio',
       image: '/images/tokio.jpg'
     }
   ];
@@ -421,8 +354,14 @@ async function main() {
   console.log('Creando usuario administrador...');
   const hashedPassword = await bcrypt.hash('admin123', 10);
   
-  await prisma.user.create({
-    data: {
+  await prisma.user.upsert({
+    where: { email: 'admin@example.com' },
+    update: {
+      name: 'Administrador',
+      password: hashedPassword,
+      role: 'ADMIN'
+    },
+    create: {
       name: 'Administrador',
       email: 'admin@example.com',
       password: hashedPassword,
@@ -434,8 +373,14 @@ async function main() {
   console.log('Creando usuario cliente...');
   const clientPassword = await bcrypt.hash('client123', 10);
   
-  await prisma.user.create({
-    data: {
+  await prisma.user.upsert({
+    where: { email: 'client@example.com' },
+    update: {
+      name: 'Cliente Ejemplo',
+      password: clientPassword,
+      role: 'CLIENT'
+    },
+    create: {
       name: 'Cliente Ejemplo',
       email: 'client@example.com',
       password: clientPassword,

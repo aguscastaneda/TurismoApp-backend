@@ -64,6 +64,7 @@ const register = async (req, res) => {
         name,
         email,
         password: hashedPassword,
+        role: "CLIENT", // Asignar rol por defecto
       },
     });
 
@@ -80,7 +81,7 @@ const register = async (req, res) => {
 
     console.log("Generando token JWT...");
     const token = jwt.sign(
-      { userId: user.id, email: user.email },
+      { userId: user.id },
       process.env.JWT_SECRET,
       { expiresIn: "2h" }
     );
@@ -119,6 +120,11 @@ const login = async (req, res) => {
       return res.status(401).json({ error: "Credenciales invalidas" });
     }
 
+    // Verificar si el usuario tiene contraseña (no es usuario de Google)
+    if (!user.password) {
+      return res.status(401).json({ error: "Este usuario debe iniciar sesión con Google" });
+    }
+
     const isPasswordValid = await bcrypt.compare(password, user.password);
 
     if (!isPasswordValid) {
@@ -139,7 +145,7 @@ const login = async (req, res) => {
         id: user.id,
         name: user.name,
         email: user.email,
-        role: user.ROLE,
+        role: user.role,
       },
       token,
     });
@@ -158,7 +164,7 @@ const getMe = async (req, res) => {
         id: true,
         name: true,
         email: true,
-        ROLE: true,
+        role: true,
       },
     });
 
@@ -166,15 +172,7 @@ const getMe = async (req, res) => {
       return res.status(404).json({ error: "Usuario no encontrado" });
     }
 
-    // Transformar ROLE a role para mantener compatibilidad con el frontend
-    const userWithRole = {
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      role: user.ROLE,
-    };
-
-    res.json(userWithRole);
+    res.json(user);
   } catch (error) {
     console.error("Error al obtener perfil:", error);
     res.status(500).json({ error: "Error al obtener informacion del usuario" });
@@ -184,42 +182,35 @@ const getMe = async (req, res) => {
 // Google authentication
 const googleAuth = async (req, res) => {
   try {
-    const { email, name, googleId } = req.body;
+    const { email, name } = req.body;
 
-    if (!email || !name || !googleId) {
+    if (!email || !name) {
       return res.status(400).json({ error: "Datos de Google incompletos" });
     }
 
-    // Buscar usuario existente o crear uno nuevo
-    let user = await prisma.user.findFirst({
-      where: {
-        OR: [
-          { email },
-          { googleId }
-        ]
-      }
+    console.log("Autenticación con Google:", { email, name });
+
+    // Buscar usuario existente por email
+    let user = await prisma.user.findUnique({
+      where: { email }
     });
 
     if (!user) {
+      console.log("Usuario no encontrado, creando nuevo usuario con Google");
       // Crear nuevo usuario con Google
       user = await prisma.user.create({
         data: {
           email,
           name,
-          googleId,
-          role: "CLIENT",
-          password: null // Los usuarios de Google no tienen contraseña
+          password: "google_user", // Contraseña temporal para usuarios de Google
+          role: "CLIENT"
         }
       });
 
       // Asegurar que el usuario tenga un carrito
       await ensureUserHasCart(user.id);
-    } else if (!user.googleId) {
-      // Actualizar usuario existente con Google ID
-      user = await prisma.user.update({
-        where: { id: user.id },
-        data: { googleId }
-      });
+    } else {
+      console.log("Usuario existente encontrado");
     }
 
     // Asegurar que el usuario tenga un carrito (por si acaso)
@@ -231,12 +222,14 @@ const googleAuth = async (req, res) => {
       { expiresIn: "2h" }
     );
 
+    console.log("Token generado para usuario:", user.id);
+
     res.json({
       user: {
         id: user.id,
         name: user.name,
         email: user.email,
-        role: user.ROLE,
+        role: user.role,
       },
       token,
     });
