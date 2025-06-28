@@ -126,7 +126,7 @@ const login = async (req, res) => {
     }
 
     // Para usuarios de Google, verificar que la contraseña comience con el hash de "google_"
-    if (user.password.startsWith('$2b$') && user.password.length > 50) {
+    if (user.password.startsWith('$2a$') && user.password.length > 50) {
       // Es un hash bcrypt, intentar verificar la contraseña
       const isPasswordValid = await bcrypt.compare(password, user.password);
       console.log(isPasswordValid, "isPasswordValid from login");
