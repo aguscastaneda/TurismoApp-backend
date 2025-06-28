@@ -10,26 +10,37 @@ const helpRoutes = require("./routes/helpRoutes");
 const app = express();
 
 // CORS configuration
-
-app.use(cors({
-  origin: ['https://turismo21.site', 'https://www.turismo21.site'], // tu frontend
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  credentials: true // si usás cookies o auth
-}));
-
+const corsOptions = {
+  origin: [
+    "https://turismo21.site",
+    "https://www.turismo21.site",
+    "http://localhost:5173",
+    "http://localhost:3000"
+  ],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: [
+    'Content-Type', 
+    'Authorization', 
+    'x-auth-token',
+    'Origin',
+    'Accept',
+    'X-Requested-With'
+  ],
+  exposedHeaders: ['Content-Range', 'X-Content-Range'],
+  maxAge: 86400 // 24 hours
+};
 
 // Middleware
-// app.use(cors(corsOptions));
+app.use(cors(corsOptions));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Logging middleware for debugging
 app.use((req, res, next) => {
   console.log(`${new Date().toISOString()} - ${req.method} ${req.path} - Origin: ${req.headers.origin}`);
-  console.log('Headers:', req.headers);
   next();
 });
-
 
 // Health check endpoint
 app.get('/health', (req, res) => {
@@ -38,15 +49,6 @@ app.get('/health', (req, res) => {
     message: 'Server is running',
     timestamp: new Date().toISOString(),
     environment: process.env.NODE_ENV || 'development'
-  });
-});
-
-// Simple test endpoint without database
-app.get('/api/ping', (req, res) => {
-  res.json({ 
-    message: 'Pong!', 
-    timestamp: new Date().toISOString(),
-    cors: 'Working'
   });
 });
 
