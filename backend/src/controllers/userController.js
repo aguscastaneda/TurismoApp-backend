@@ -64,6 +64,7 @@ const register = async (req, res) => {
         name,
         email,
         password: hashedPassword,
+        role: "CLIENT", // Asignar rol por defecto
       },
     });
 
@@ -80,7 +81,7 @@ const register = async (req, res) => {
 
     console.log("Generando token JWT...");
     const token = jwt.sign(
-      { userId: user.id, email: user.email },
+      { userId: user.id },
       process.env.JWT_SECRET,
       { expiresIn: "2h" }
     );
@@ -114,15 +115,29 @@ const login = async (req, res) => {
     const user = await prisma.user.findUnique({
       where: { email },
     });
-
+    console.log(user, "user from login");
     if (!user) {
       return res.status(401).json({ error: "Credenciales invalidas" });
     }
 
-    const isPasswordValid = await bcrypt.compare(password, user.password);
+    // Verificar si el usuario tiene contraseña (no es usuario de Google)
+    if (!user.password) {
+      return res.status(401).json({ error: "Este usuario debe iniciar sesión con Google" });
+    }
 
-    if (!isPasswordValid) {
-      return res.status(401).json({ error: "Credenciales invalidas" });
+    // Para usuarios de Google, verificar que la contraseña comience con el hash de "google_"
+    if (user.password.startsWith('$2b$') && user.password.length > 50) {
+      // Es un hash bcrypt, intentar verificar la contraseña
+      const isPasswordValid = await bcrypt.compare(password, user.password);
+      console.log(isPasswordValid, "isPasswordValid from login");
+      if (!isPasswordValid) {
+        return res.status(401).json({ error: "Credenciales invalidas" });
+      }
+    } else {
+      // Contraseña en texto plano (no debería ocurrir en producción)
+      if (user.password !== password) {
+        return res.status(401).json({ error: "Credenciales invalidas" });
+      }
     }
 
     // Asegurar que el usuario tenga un carrito
@@ -176,42 +191,36 @@ const getMe = async (req, res) => {
 // Google authentication
 const googleAuth = async (req, res) => {
   try {
-    const { email, name, googleId } = req.body;
+    const { email, name } = req.body;
 
-    if (!email || !name || !googleId) {
+    if (!email || !name) {
       return res.status(400).json({ error: "Datos de Google incompletos" });
     }
 
-    // Buscar usuario existente o crear uno nuevo
-    let user = await prisma.user.findFirst({
-      where: {
-        OR: [
-          { email },
-          { googleId }
-        ]
-      }
+    console.log("Autenticación con Google:", { email, name });
+
+    // Buscar usuario existente por email
+    let user = await prisma.user.findUnique({
+      where: { email }
     });
 
     if (!user) {
-      // Crear nuevo usuario con Google
+      console.log("Usuario no encontrado, creando nuevo usuario con Google");
+      // Crear nuevo usuario con Google - usar un hash seguro como contraseña
+      const googlePassword = await bcrypt.hash(`google_${Date.now()}`, 10);
       user = await prisma.user.create({
         data: {
           email,
           name,
-          googleId,
-          role: "CLIENT",
-          password: null // Los usuarios de Google no tienen contraseña
+          password: googlePassword, // Contraseña hasheada para usuarios de Google
+          role: "CLIENT"
         }
       });
 
       // Asegurar que el usuario tenga un carrito
       await ensureUserHasCart(user.id);
-    } else if (!user.googleId) {
-      // Actualizar usuario existente con Google ID
-      user = await prisma.user.update({
-        where: { id: user.id },
-        data: { googleId }
-      });
+    } else {
+      console.log("Usuario existente encontrado");
     }
 
     // Asegurar que el usuario tenga un carrito (por si acaso)
@@ -222,6 +231,8 @@ const googleAuth = async (req, res) => {
       process.env.JWT_SECRET,
       { expiresIn: "2h" }
     );
+
+    console.log("Token generado para usuario:", user.id);
 
     res.json({
       user: {
