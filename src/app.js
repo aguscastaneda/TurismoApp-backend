@@ -12,13 +12,9 @@ const app = express();
 // CORS configuration
 const corsOptions = {
   origin: [
-    'https://turismo-app-frontend.vercel.app',
-    'https://turismoapp-backend.onrender.com',
-    'http://localhost:5173',
-    'http://localhost:3000',
-    'http://127.0.0.1:5173',
-    'http://127.0.0.1:3000'
-  ],
+        "https://turismo21.site",
+        "https://www.turismo21.site"
+      ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'x-auth-token']
