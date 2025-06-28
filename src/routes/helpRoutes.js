@@ -135,7 +135,7 @@ router.get('/', auth, async (req, res) => {
   try {
     const user = req.user;
     
-    if (user.role === "ADMIN" || user.role === "SALES_MANAGER") {
+    if (user.ROLE === "ADMIN" || user.ROLE === "SALES_MANAGER") {
       res.json(manualAdmin);
     } else {
       res.json(manualCliente);

@@ -31,7 +31,7 @@ const auth = async (req, res, next) => {
 
 const checkRole = (roles) => {
   return (req, res, next) => {
-    if (!roles.includes(req.user.role)) {
+    if (!roles.includes(req.user.ROLE)) {
       return res.status(403).json({ error: "Acceso no autorizado" });
     }
     next();

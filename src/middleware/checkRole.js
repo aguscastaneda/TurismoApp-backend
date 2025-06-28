@@ -5,7 +5,7 @@ const checkRole = (allowedRoles) => {
         return res.status(401).json({ error: "Usuario no autenticado" });
       }
 
-      if (!allowedRoles.includes(req.user.role)) {
+      if (!allowedRoles.includes(req.user.ROLE)) {
         return res
           .status(403)
           .json({ error: "No tiene permiso para realizar esta accion" });

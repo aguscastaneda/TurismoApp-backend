@@ -300,7 +300,7 @@ const getOrders = async (req, res) => {
     const { user } = req;
 
     let orders;
-    if (user.role === "ADMIN" || user.role === "SALES_MANAGER") {
+    if (user.ROLE === "ADMIN" || user.ROLE === "SALES_MANAGER") {
       orders = await prisma.order.findMany({
         include: {
           user: {
@@ -315,7 +315,6 @@ const getOrders = async (req, res) => {
               product: true,
             },
           },
-          orderStatus: true,
         },
         orderBy: {
           createdAt: "desc",
@@ -330,7 +329,6 @@ const getOrders = async (req, res) => {
               product: true,
             },
           },
-          orderStatus: true,
         },
         orderBy: {
           createdAt: "desc",
@@ -353,7 +351,7 @@ const updateOrderStatus = async (req, res) => {
 
     console.log("Actualizando estado de orden:", { orderId, status });
 
-    if (user.role !== "ADMIN" && user.role !== "SALES_MANAGER") {
+    if (user.ROLE !== "ADMIN" && user.ROLE !== "SALES_MANAGER") {
       return res.status(403).json({ error: "No tienes permisos para actualizar ordenes" });
     }
 
@@ -415,7 +413,7 @@ const cancelOrder = async (req, res) => {
     const { orderId } = req.params;
     const { user } = req;
 
-    console.log("Intentando cancelar orden:", { orderId, userId: user.id, userRole: user.role });
+    console.log("Intentando cancelar orden:", { orderId, userId: user.id, userRole: user.ROLE });
 
     const order = await prisma.order.findUnique({
       where: { id: parseInt(orderId) },
@@ -431,7 +429,7 @@ const cancelOrder = async (req, res) => {
     }
 
     const isOwner = order.userId === user.id;
-    const isAdmin = user.role === "ADMIN" || user.role === "SALES_MANAGER";
+    const isAdmin = user.ROLE === "ADMIN" || user.ROLE === "SALES_MANAGER";
 
     console.log("Permisos:", { isOwner, isAdmin, orderUserId: order.userId, currentUserId: user.id });
 

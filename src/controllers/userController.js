@@ -139,7 +139,7 @@ const login = async (req, res) => {
         id: user.id,
         name: user.name,
         email: user.email,
-        role: user.role,
+        role: user.ROLE,
       },
       token,
     });
@@ -158,7 +158,7 @@ const getMe = async (req, res) => {
         id: true,
         name: true,
         email: true,
-        role: true,
+        ROLE: true,
       },
     });
 
@@ -166,7 +166,15 @@ const getMe = async (req, res) => {
       return res.status(404).json({ error: "Usuario no encontrado" });
     }
 
-    res.json(user);
+    // Transformar ROLE a role para mantener compatibilidad con el frontend
+    const userWithRole = {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.ROLE,
+    };
+
+    res.json(userWithRole);
   } catch (error) {
     console.error("Error al obtener perfil:", error);
     res.status(500).json({ error: "Error al obtener informacion del usuario" });
@@ -228,7 +236,7 @@ const googleAuth = async (req, res) => {
         id: user.id,
         name: user.name,
         email: user.email,
-        role: user.role,
+        role: user.ROLE,
       },
       token,
     });

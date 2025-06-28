@@ -10,13 +10,12 @@ datasource db {
 
 model User {
   id        Int       @id @default(autoincrement())
-  email     String    @unique @db.VarChar(255)
-  password  String?   @db.VarChar(255)
+  email     String    @unique(map: "email") @db.VarChar(255)
+  password  String    @db.VarChar(255)
   name      String    @db.VarChar(255)
-  googleId  String?   @unique @db.VarChar(255)
-  role      user_role @default(CLIENT)
-  createdAt DateTime  @default(now()) @map("createdAt")
-  updatedAt DateTime  @updatedAt @map("updatedAt")
+  ROLE      String    @db.VarChar(20)
+  createdAt DateTime? @default(now()) @map("createdAt") @db.DateTime(0)
+  updatedAt DateTime? @default(now()) @updatedAt @map("updatedAt") @db.DateTime(0)
   cart      Cart?
   orders    Order[]
 
@@ -29,10 +28,9 @@ model Product {
   description String?     @db.Text
   price       Decimal     @db.Decimal(10, 2)
   stock       Int
-  destination String?     @db.VarChar(255)
   image       String?     @db.VarChar(255)
-  createdAt   DateTime    @default(now()) @map("createdAt")
-  updatedAt   DateTime    @updatedAt @map("updatedAt")
+  createdAt   DateTime?   @default(now()) @map("createdAt") @db.DateTime(0)
+  updatedAt   DateTime?   @default(now()) @updatedAt @map("updatedAt") @db.DateTime(0)
   cartItems   CartItem[]
   orderItems  OrderItem[]
 
@@ -41,26 +39,27 @@ model Product {
 
 model Cart {
   id        Int        @id @default(autoincrement())
-  userId    Int        @unique
-  createdAt DateTime   @default(now()) @map("createdAt")
-  updatedAt DateTime   @updatedAt @map("updatedAt")
-  user      User       @relation(fields: [userId], references: [id])
+  userId    Int        @unique(map: "userId")
+  createdAt DateTime?  @default(now()) @map("createdAt") @db.DateTime(0)
+  updatedAt DateTime?  @default(now()) @updatedAt @map("updatedAt") @db.DateTime(0)
+  user      User       @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "Cart_ibfk_1")
   items     CartItem[]
 
   @@map("Cart")
 }
 
 model CartItem {
-  id        Int      @id @default(autoincrement())
+  id        Int       @id @default(autoincrement())
   cartId    Int
   productId Int
   quantity  Int
-  createdAt DateTime @default(now()) @map("createdAt")
-  updatedAt DateTime @updatedAt @map("updatedAt")
-  cart      Cart     @relation(fields: [cartId], references: [id])
-  product   Product  @relation(fields: [productId], references: [id])
+  createdAt DateTime? @default(now()) @map("createdAt") @db.DateTime(0)
+  updatedAt DateTime? @default(now()) @updatedAt @map("updatedAt") @db.DateTime(0)
+  cart      Cart      @relation(fields: [cartId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "CartItem_ibfk_1")
+  product   Product   @relation(fields: [productId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "CartItem_ibfk_2")
 
-  @@unique([cartId, productId], name: "unique_cart_product")
+  @@unique([cartId, productId], name: "unique_cart_product", map: "unique_cart_product")
+  @@index([productId], map: "productId")
   @@map("CartItem")
 }
 
@@ -73,36 +72,33 @@ model OrderStatus {
 }
 
 model Order {
-  id          Int         @id @default(autoincrement())
+  id          Int          @id @default(autoincrement())
   userId      Int
-  total       Decimal     @db.Decimal(10, 2)
-  status      Int         @default(0) @db.TinyInt
-  paymentId   String?     @db.VarChar(255)
-  createdAt   DateTime    @default(now()) @map("createdAt")
-  updatedAt   DateTime    @updatedAt @map("updatedAt")
-  user        User        @relation(fields: [userId], references: [id])
+  total       Decimal      @db.Decimal(10, 2)
+  status      Int?         @default(0) @db.TinyInt
+  createdAt   DateTime?    @default(now()) @map("createdAt") @db.DateTime(0)
+  updatedAt   DateTime?    @default(now()) @updatedAt @map("updatedAt") @db.DateTime(0)
+  user        User         @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "Order_ibfk_1")
+  orderStatus OrderStatus? @relation(fields: [status], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "Order_ibfk_2")
   items       OrderItem[]
-  orderStatus OrderStatus @relation(fields: [status], references: [id])
 
+  @@index([status], map: "status")
+  @@index([userId], map: "userId")
   @@map("Order")
 }
 
 model OrderItem {
-  id        Int      @id @default(autoincrement())
+  id        Int       @id @default(autoincrement())
   orderId   Int
   productId Int
   quantity  Int
-  price     Decimal  @db.Decimal(10, 2)
-  createdAt DateTime @default(now()) @map("createdAt")
-  updatedAt DateTime @updatedAt @map("updatedAt")
-  order     Order    @relation(fields: [orderId], references: [id])
-  product   Product  @relation(fields: [productId], references: [id])
+  price     Decimal   @db.Decimal(10, 2)
+  createdAt DateTime? @default(now()) @map("createdAt") @db.DateTime(0)
+  updatedAt DateTime? @default(now()) @updatedAt @map("updatedAt") @db.DateTime(0)
+  order     Order     @relation(fields: [orderId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "OrderItem_ibfk_1")
+  product   Product   @relation(fields: [productId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "OrderItem_ibfk_2")
 
+  @@index([orderId], map: "orderId")
+  @@index([productId], map: "productId")
   @@map("OrderItem")
-}
-
-enum user_role {
-  CLIENT
-  SALES_MANAGER
-  ADMIN
 }
