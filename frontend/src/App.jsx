@@ -129,7 +129,7 @@ const AppContent = () => {
 };
 
 const App = () => {
-  const GOOGLE_CLIENT_ID = "474698593228-58gn7dgf5635377j1f3frpht94spnp88.apps.googleusercontent.com";
+  const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || "474698593228-58gn7dgf5635377j1f3frpht94spnp88.apps.googleusercontent.com";
 
   return (
     <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>

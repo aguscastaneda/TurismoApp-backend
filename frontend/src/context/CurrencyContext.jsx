@@ -42,7 +42,8 @@ export const CurrencyProvider = ({ children }) => {
     setError(null);
     
     try {
-      const response = await axios.get('http://localhost:3000/api/currency/rates');
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+      const response = await axios.get(`${apiUrl}/api/currency/rates`);
       
       if (response.data.success) {
         setExchangeRates(response.data.rates);
