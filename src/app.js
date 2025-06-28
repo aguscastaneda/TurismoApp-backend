@@ -31,7 +31,7 @@ app.use((req, res, next) => {
 });
 
 // CORS preflight handler
-app.options('*', cors(corsOptions));
+app.options('*', cors());
 
 // Health check endpoint
 app.get('/health', (req, res) => {
