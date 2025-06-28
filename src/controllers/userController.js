@@ -115,7 +115,7 @@ const login = async (req, res) => {
     const user = await prisma.user.findUnique({
       where: { email },
     });
-
+    console.log(user, "user from login");
     if (!user) {
       return res.status(401).json({ error: "Credenciales invalidas" });
     }
@@ -129,6 +129,7 @@ const login = async (req, res) => {
     if (user.password.startsWith('$2b$') && user.password.length > 50) {
       // Es un hash bcrypt, intentar verificar la contraseña
       const isPasswordValid = await bcrypt.compare(password, user.password);
+      console.log(isPasswordValid, "isPasswordValid from login");
       if (!isPasswordValid) {
         return res.status(401).json({ error: "Credenciales invalidas" });
       }
