@@ -11,12 +11,13 @@ import Cart from "./pages/Cart";
 import MyOrders from "./pages/MyOrders";
 import OrderManagement from "./pages/OrderManagement";
 import ProductManagement from "./pages/ProductManagement";
+import Help from "./pages/Help";
 import { useAuth } from "./context/AuthContext";
 
 const PrivateRoute = ({ children }) => {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, loading, isInitialized } = useAuth();
 
-  if (isLoading) {
+  if (!isInitialized || loading) {
     return (
       <div className="min-h-screen gradient-bg flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
@@ -32,9 +33,9 @@ const PrivateRoute = ({ children }) => {
 };
 
 const AdminRoute = ({ children }) => {
-  const { isAuthenticated, user, isLoading } = useAuth();
+  const { isAuthenticated, user, loading, isInitialized } = useAuth();
 
-  if (isLoading) {
+  if (!isInitialized || loading) {
     return (
       <div className="min-h-screen gradient-bg flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
@@ -53,11 +54,34 @@ const AdminRoute = ({ children }) => {
   return children;
 };
 
+const ManagerRoute = ({ children }) => {
+  const { isAuthenticated, user, loading, isInitialized } = useAuth();
+
+  if (!isInitialized || loading) {
+    return (
+      <div className="min-h-screen gradient-bg flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (user?.role !== "ADMIN" && user?.role !== "SALES_MANAGER") {
+    return <Navigate to="/" replace />;
+  }
+
+  return children;
+};
+
 const AppContent = () => {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, loading, isInitialized } = useAuth();
   const location = useLocation();
 
-  if (isLoading) {
+  // Mostrar loading solo mientras se inicializa la autenticación
+  if (!isInitialized || loading) {
     return (
       <div className="min-h-screen gradient-bg flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
@@ -77,6 +101,7 @@ const AppContent = () => {
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/" element={<Products />} />
+          <Route path="/help" element={<Help />} />
           <Route path="/cart" element={
             <PrivateRoute>
               <Cart />
@@ -88,9 +113,9 @@ const AppContent = () => {
             </PrivateRoute>
           } />
           <Route path="/admin/orders" element={
-            <AdminRoute>
+            <ManagerRoute>
               <OrderManagement />
-            </AdminRoute>
+            </ManagerRoute>
           } />
           <Route path="/admin/products" element={
             <AdminRoute>

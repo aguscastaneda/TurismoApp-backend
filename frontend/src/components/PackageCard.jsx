@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { useCurrency } from '../context/CurrencyContext';
 import useWeather from '../hooks/useWeather';
 import { useNavigate } from 'react-router-dom';
+import { getDestinationImage, handleImageError } from '../utils/imageUtils';
 
 const PackageCard = ({ package: pkg }) => {
   const [people, setPeople] = useState(1);
@@ -67,31 +68,6 @@ const PackageCard = ({ package: pkg }) => {
     return "5 estrellas";
   };
 
-  const getDestinationImage = (destination) => {
-    const images = {
-      // Destinos argentinos
-      'Bariloche': '/images/bariloche.jpg',
-      'Iguazú': '/images/iguazujpg.jpg',
-      'Mendoza': '/images/mendoza.jpeg',
-      'Salta': '/images/salta.jpg',
-      'Ushuaia': '/images/ushuaiajpg.jpg',
-      'Córdoba': '/images/cordoba.jpg',
-      
-      // Destinos internacionales
-      'Río de Janeiro': '/images/rio-janeiro.jpg',
-      'Santiago de Chile': '/images/santiago-chile.jpg',
-      'Lima': '/images/lima.jpeg',
-      'Bogotá': '/images/bogota.jpeg',
-      'Ciudad de México': '/images/mexico.jpg',
-      'Nueva York': '/images/new-york.jpg',
-      'París': '/images/paris.jpg',
-      'Tokio': '/images/tokio.jpg'
-    };
-   
-    const imageUrl = images[destination] || '/images/default.jpg';
-    return imageUrl;
-  };
-
   return (
     <div className="package-card h-full flex flex-col">
       {/* Imagen del destino */}
@@ -100,9 +76,7 @@ const PackageCard = ({ package: pkg }) => {
           src={getDestinationImage(pkg.destination)}
           alt={`${pkg.destination}`}
           className="w-full h-full object-cover transition-transform duration-300 hover:scale-110"
-          onError={(e) => {
-            e.target.src = '/images/default.jpg';
-          }}
+          onError={handleImageError}
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
         <div className="absolute top-4 right-4">

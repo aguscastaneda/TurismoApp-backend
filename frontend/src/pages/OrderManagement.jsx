@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { handleImageError } from '../utils/imageUtils';
 
 const OrderManagement = () => {
   const [orders, setOrders] = useState([]);
@@ -45,7 +46,7 @@ const OrderManagement = () => {
       console.log(`Actualizando orden ${orderId} a estado ${newStatus}`);
       
       const response = await fetch(`${import.meta.env.VITE_API_URL}/api/orders/${orderId}/status`, {
-        method: 'PATCH',
+        method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${localStorage.getItem('token')}`
@@ -83,7 +84,7 @@ const OrderManagement = () => {
     try {
       setCancellingOrder(orderId);
       const response = await fetch(`${import.meta.env.VITE_API_URL}/api/orders/${orderId}/cancel`, {
-        method: 'POST',
+        method: 'PUT',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
@@ -219,8 +220,8 @@ const OrderManagement = () => {
           </p>
         </div>
 
-          <div className="space-y-6">
-            {orders.map((order) => (
+        <div className="space-y-6">
+          {orders.map((order) => (
             <div key={order.id} className="card p-6 hover:shadow-xl transition-all duration-300">
               <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-6">
                 <div className="flex-1">
@@ -257,8 +258,8 @@ const OrderManagement = () => {
                       <span><strong>Creada:</strong> {formatDate(order.createdAt)}</span>
                     </div>
                   </div>
-                    </div>
-                  </div>
+                </div>
+              </div>
 
               {/* Items de la orden */}
               <div className="mb-6">
@@ -268,12 +269,10 @@ const OrderManagement = () => {
                     <div key={index} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-100">
                       <div className="flex items-center space-x-4">
                         <img 
-                          src={item.product?.image || '/images/default.jpg'} 
+                          src={item.product?.image || '/images/bariloche.jpg'} 
                           alt={item.product?.name || 'Producto'} 
-                          className="w-12 h-12 object-cover rounded-lg"
-                          onError={(e) => {
-                            e.target.src = '/images/default.jpg';
-                          }}
+                          className="w-16 h-16 object-cover rounded-lg"
+                          onError={handleImageError}
                         />
                         <div>
                           <p className="font-semibold text-gray-800">{item.product?.name || 'Producto desconocido'}</p>
@@ -285,7 +284,7 @@ const OrderManagement = () => {
                       <p className="font-semibold text-gray-900">
                         ${((item.quantity || 0) * (item.price || 0)).toLocaleString('es-AR')}
                       </p>
-                  </div>
+                    </div>
                   ))}
                 </div>
               </div>
@@ -304,22 +303,22 @@ const OrderManagement = () => {
                     <option value={2}>Completada</option>
                     <option value={3}>Cancelada</option>
                   </select>
-                    </div>
-                    
+                </div>
+                
                 <div className="flex space-x-3">
-                    {canCancelOrder(order) && (
-                        <button
-                          onClick={() => handleCancelOrder(order.id)}
-                          disabled={cancellingOrder === order.id}
+                  {canCancelOrder(order) && (
+                    <button
+                      onClick={() => handleCancelOrder(order.id)}
+                      disabled={cancellingOrder === order.id}
                       className="btn-danger disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
+                    >
                       {cancellingOrder === order.id ? 'Cancelando...' : 'Cancelar Orden'}
-                        </button>
-                    )}
-                  </div>
+                    </button>
+                  )}
                 </div>
               </div>
-            ))}
+            </div>
+          ))}
 
           {orders.length === 0 && (
             <div className="text-center py-16">
@@ -330,8 +329,8 @@ const OrderManagement = () => {
                 <p className="text-gray-600 text-lg">No hay órdenes para gestionar</p>
                 <p className="text-gray-500 text-sm mt-2">Las órdenes aparecerán aquí cuando los clientes realicen compras</p>
               </div>
-          </div>
-        )}
+            </div>
+          )}
         </div>
       </div>
     </div>

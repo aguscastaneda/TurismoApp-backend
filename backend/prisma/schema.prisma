@@ -1,5 +1,6 @@
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "debian-openssl-3.0.x"]
 }
 
 datasource db {
@@ -10,14 +11,14 @@ datasource db {
 model User {
   id        Int       @id @default(autoincrement())
   email     String    @unique @db.VarChar(255)
-  password  String?   @db.VarChar(255)
+  password  String    @db.VarChar(255)
   name      String    @db.VarChar(255)
-  googleId  String?   @unique @db.VarChar(255)
-  role      user_role @default(CLIENT)
-  createdAt DateTime  @default(now()) @map("createdAt")
-  updatedAt DateTime  @updatedAt @map("updatedAt")
+  role      String    @db.VarChar(20)
+  googleId  String?   @db.VarChar(200)
+  createdAt DateTime  @default(now()) @db.DateTime(0)
+  updatedAt DateTime  @default(now()) @updatedAt @db.DateTime(0)
   cart      Cart?
-  orders    Order[]
+  orders    Orders[]
 
   @@map("User")
 }
@@ -28,10 +29,10 @@ model Product {
   description String?     @db.Text
   price       Decimal     @db.Decimal(10, 2)
   stock       Int
-  destination String?     @db.VarChar(255)
   image       String?     @db.VarChar(255)
-  createdAt   DateTime    @default(now()) @map("createdAt")
-  updatedAt   DateTime    @updatedAt @map("updatedAt")
+  destination String?     @db.VarChar(255)
+  createdAt   DateTime    @default(now()) @db.DateTime(0)
+  updatedAt   DateTime    @default(now()) @updatedAt @db.DateTime(0)
   cartItems   CartItem[]
   orderItems  OrderItem[]
 
@@ -41,8 +42,8 @@ model Product {
 model Cart {
   id        Int        @id @default(autoincrement())
   userId    Int        @unique
-  createdAt DateTime   @default(now()) @map("createdAt")
-  updatedAt DateTime   @updatedAt @map("updatedAt")
+  createdAt DateTime   @default(now()) @db.DateTime(0)
+  updatedAt DateTime   @default(now()) @updatedAt @db.DateTime(0)
   user      User       @relation(fields: [userId], references: [id])
   items     CartItem[]
 
@@ -50,58 +51,51 @@ model Cart {
 }
 
 model CartItem {
-  id        Int      @id @default(autoincrement())
+  id        Int       @id @default(autoincrement())
   cartId    Int
   productId Int
   quantity  Int
-  createdAt DateTime @default(now()) @map("createdAt")
-  updatedAt DateTime @updatedAt @map("updatedAt")
-  cart      Cart     @relation(fields: [cartId], references: [id])
-  product   Product  @relation(fields: [productId], references: [id])
+  createdAt DateTime  @default(now()) @db.DateTime(0)
+  updatedAt DateTime  @default(now()) @updatedAt @db.DateTime(0)
+  cart      Cart      @relation(fields: [cartId], references: [id])
+  product   Product   @relation(fields: [productId], references: [id])
 
   @@unique([cartId, productId], name: "unique_cart_product")
   @@map("CartItem")
 }
 
 model OrderStatus {
-  id    Int     @id @db.TinyInt
-  name  String  @db.VarChar(50)
-  orders Order[]
+  id     Int      @id @db.TinyInt
+  name   String   @db.VarChar(50)
+  orders Orders[]
 
   @@map("OrderStatus")
 }
 
-model Order {
-  id        Int         @id @default(autoincrement())
-  userId    Int
-  total     Decimal     @db.Decimal(10, 2)
-  status    Int         @default(0) @db.TinyInt
-  paymentId String?     @db.VarChar(255)
-  createdAt DateTime    @default(now()) @map("createdAt")
-  updatedAt DateTime    @updatedAt @map("updatedAt")
-  user      User        @relation(fields: [userId], references: [id])
-  items     OrderItem[]
-  orderStatus OrderStatus @relation(fields: [status], references: [id])
+model Orders {
+  id          Int          @id @default(autoincrement())
+  userId      Int
+  total       Decimal      @db.Decimal(10, 2)
+  status      Int          @default(0) @db.TinyInt
+  createdAt   DateTime     @default(now()) @db.DateTime(0)
+  updatedAt   DateTime     @default(now()) @updatedAt @db.DateTime(0)
+  user        User         @relation(fields: [userId], references: [id])
+  orderStatus OrderStatus? @relation(fields: [status], references: [id])
+  items       OrderItem[]
 
-  @@map("Order")
+  @@map("Orders")
 }
 
 model OrderItem {
-  id        Int      @id @default(autoincrement())
+  id        Int       @id @default(autoincrement())
   orderId   Int
   productId Int
   quantity  Int
-  price     Decimal  @db.Decimal(10, 2)
-  createdAt DateTime @default(now()) @map("createdAt")
-  updatedAt DateTime @updatedAt @map("updatedAt")
-  order     Order    @relation(fields: [orderId], references: [id])
-  product   Product  @relation(fields: [productId], references: [id])
+  price     Decimal   @db.Decimal(10, 2)
+  createdAt DateTime  @default(now()) @db.DateTime(0)
+  updatedAt DateTime  @default(now()) @updatedAt @db.DateTime(0)
+  order     Orders    @relation(fields: [orderId], references: [id])
+  product   Product   @relation(fields: [productId], references: [id])
 
   @@map("OrderItem")
-}
-
-enum user_role {
-  CLIENT
-  SALES_MANAGER
-  ADMIN
 }

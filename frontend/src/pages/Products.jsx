@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import PackageCard from '../components/PackageCard';
 import { useAuth } from '../context/AuthContext';
+import { useCurrency } from "../context/CurrencyContext";
+import { handleImageError } from "../utils/imageUtils";
 
 
 // Datos de prueba temporales
@@ -309,9 +311,7 @@ const Products = () => {
                   src={image}
                   alt={`Destino ${index + 1}`}
                   className="w-full h-full object-cover"
-                  onError={(e) => {
-                    e.target.src = '/images/default.jpg';
-                  }}
+                  onError={handleImageError}
                 />
                 {/* Overlay oscuro para mejorar legibilidad del texto */}
                 <div className="absolute inset-0 bg-gradient-to-br from-black/50 via-black/30 to-black/50"></div>

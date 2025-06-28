@@ -13,6 +13,7 @@ export const useAuth = () => {
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [isInitialized, setIsInitialized] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -34,14 +35,16 @@ export const AuthProvider = ({ children }) => {
           if (error.response?.status === 401) {
             localStorage.removeItem("token");
             setUser(null);
+            navigate("/login");
           }
         }
       }
       setLoading(false);
+      setIsInitialized(true);
     };
 
     initializeAuth();
-  }, []);
+  }, [navigate]);
 
   const login = async (email, password) => {
     try {
@@ -103,6 +106,7 @@ export const AuthProvider = ({ children }) => {
   const value = {
     user,
     loading,
+    isInitialized,
     login,
     register,
     logout,

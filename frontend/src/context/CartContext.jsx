@@ -42,7 +42,7 @@ export const CartProvider = ({ children }) => {
       }
 
       const data = await response.json();
-      setCart(data.items || []);
+      setCart(data.cart?.items || []);
     } catch (error) {
       console.error('Error fetching cart:', error);
       setError(error.message);
@@ -58,13 +58,12 @@ export const CartProvider = ({ children }) => {
     }
 
     try {
-      // Limpiar mensajes previos para este producto
       setProductMessages(prev => ({
         ...prev,
         [productId]: { success: null, error: null }
       }));
       
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/cart`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/cart/add`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -80,7 +79,6 @@ export const CartProvider = ({ children }) => {
 
       await fetchCart();
       
-      // Mostrar mensaje de éxito para este producto específico
       setProductMessages(prev => ({
         ...prev,
         [productId]: { 
@@ -89,7 +87,6 @@ export const CartProvider = ({ children }) => {
         }
       }));
       
-      // Limpiar mensaje de éxito después de 3 segundos
       setTimeout(() => {
         setProductMessages(prev => ({
           ...prev,
@@ -101,7 +98,6 @@ export const CartProvider = ({ children }) => {
     } catch (error) {
       console.error('Error adding to cart:', error);
       
-      // Mostrar mensaje de error para este producto específico
       setProductMessages(prev => ({
         ...prev,
         [productId]: { 
@@ -121,7 +117,6 @@ export const CartProvider = ({ children }) => {
     }
 
     try {
-      // Primero necesitamos obtener el itemId del carrito
       const cartResponse = await fetch(`${import.meta.env.VITE_API_URL}/api/cart`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
@@ -133,13 +128,13 @@ export const CartProvider = ({ children }) => {
       }
 
       const cartData = await cartResponse.json();
-      const item = cartData.items.find(item => item.productId === parseInt(productId));
+      const item = cartData.cart?.items.find(item => item.productId === parseInt(productId));
       
       if (!item) {
         throw new Error('Item no encontrado en el carrito');
       }
 
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/cart/${item.id}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/cart/items/${item.id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
@@ -164,7 +159,6 @@ export const CartProvider = ({ children }) => {
     }
 
     try {
-      // Primero necesitamos obtener el itemId del carrito
       const cartResponse = await fetch(`${import.meta.env.VITE_API_URL}/api/cart`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
@@ -176,13 +170,13 @@ export const CartProvider = ({ children }) => {
       }
 
       const cartData = await cartResponse.json();
-      const item = cartData.items.find(item => item.productId === parseInt(productId));
+      const item = cartData.cart?.items.find(item => item.productId === parseInt(productId));
       
       if (!item) {
         throw new Error('Item no encontrado en el carrito');
       }
 
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/cart/${item.id}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/cart/items/${item.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -209,7 +203,7 @@ export const CartProvider = ({ children }) => {
     }
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/cart`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/cart/clear`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
@@ -217,7 +211,7 @@ export const CartProvider = ({ children }) => {
       });
 
       if (!response.ok) {
-        throw new Error('Error al limpiar el carrito');
+        throw new Error('Error al vaciar el carrito');
       }
 
       setCart([]);
@@ -228,7 +222,7 @@ export const CartProvider = ({ children }) => {
   };
 
   const getTotal = () => {
-    return cart.reduce((total, item) => total + (item.product.price * item.quantity), 0);
+    return cart.reduce((total, item) => total + parseFloat(item.product.price) * item.quantity, 0);
   };
 
   const getProductMessage = (productId) => {
@@ -252,13 +246,9 @@ export const CartProvider = ({ children }) => {
     updateQuantity,
     clearCart,
     getTotal,
-    refreshCart: fetchCart,
-    clearMessages: () => {
-      setError(null);
-      setSuccess(null);
-    },
     getProductMessage,
-    clearProductMessage
+    clearProductMessage,
+    fetchCart
   };
 
   return (

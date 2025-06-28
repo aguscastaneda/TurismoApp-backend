@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 import axios from 'axios';
+import { handleImageError } from "../utils/imageUtils";
 
 const MyOrders = () => {
   const [orders, setOrders] = useState([]);
@@ -18,7 +19,7 @@ const MyOrders = () => {
       setError(null);
       try {
         const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-        const response = await axios.get(`${apiUrl}/api/orders/my-orders`, {
+        const response = await axios.get(`${apiUrl}/api/orders/`, {
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('token')}`
           }
@@ -298,12 +299,10 @@ const MyOrders = () => {
                     <div key={item.id || index} className="flex justify-between items-center p-4 bg-gray-50 rounded-xl border border-gray-100">
                     <div className="flex items-center space-x-4">
                         <img 
-                          src={item.product?.image || '/images/default.jpg'} 
+                          src={item.product?.image || '/images/bariloche.jpg'} 
                           alt={item.product?.name || 'Producto'} 
                           className="w-16 h-16 object-cover rounded-lg"
-                          onError={(e) => {
-                            e.target.src = '/images/default.jpg';
-                          }}
+                          onError={handleImageError}
                         />
                       <div>
                           <p className="font-semibold text-gray-800">{item.product?.name || 'Producto desconocido'}</p>

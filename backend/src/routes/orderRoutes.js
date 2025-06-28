@@ -12,14 +12,14 @@ const {
 
 // Rutas publicas, recibe webhooks de mp y procesa
 router.post("/webhook", handleWebhook);
-router.post("/test-webhook", auth, checkRole(["ADMIN"]), testWebhook);
+router.post("/test-webhook/:orderId", auth, checkRole(["ADMIN"]), testWebhook);
 
 // Todas las rutas requieren autenticacion
 router.use(auth);
 
 // Rutas de admin
 router.get("/", getOrders);
-router.put("/:orderId/status", checkRole(["ADMIN", "SALES_MANAGER"]), updateOrderStatus);
+router.put("/:orderId/status", checkRole(["ADMIN"]), updateOrderStatus);
 
 // Rutas de cliente
 router.post("/", createOrder);

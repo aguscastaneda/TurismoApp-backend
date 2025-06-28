@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
 import { useAuth } from "../context/AuthContext";
+import { handleImageError } from "../utils/imageUtils";
 
 const ProductManagement = () => {
   const [products, setProducts] = useState([]);
@@ -219,12 +220,10 @@ const ProductManagement = () => {
             <div key={product.id} className="card p-6 hover:shadow-xl transition-all duration-300">
               <div className="relative mb-4">
                 <img
-                  src={product.image || "/images/default.jpg"}
+                  src={product.image || "/images/bariloche.jpg"}
                   alt={product.name}
                   className="w-full h-48 object-cover rounded-xl"
-                  onError={(e) => {
-                    e.target.src = "/images/default.jpg";
-                  }}
+                  onError={handleImageError}
                 />
                 <div className="absolute top-2 right-2">
                   <span className={`px-3 py-1 rounded-full text-sm font-semibold ${
