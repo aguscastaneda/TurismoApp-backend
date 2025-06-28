@@ -15,7 +15,8 @@ const corsOptions = {
     "https://turismo21.site",
     "https://www.turismo21.site",
     "http://localhost:5173",
-    "http://localhost:3000"
+    "http://localhost:3000",
+    "https://api.turismo21.site/api/products"
   ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
