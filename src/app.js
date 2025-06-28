@@ -11,13 +11,7 @@ const app = express();
 
 // CORS configuration
 const corsOptions = {
-  origin: [
-    "https://turismo21.site",
-    "https://www.turismo21.site",
-    "http://localhost:5173",
-    "http://localhost:3000",
-    "https://api.turismo21.site/api/products"
-  ],
+  origin: true, // Permitir todos los orígenes temporalmente para debugging
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowedHeaders: [
@@ -40,8 +34,12 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 // Logging middleware for debugging
 app.use((req, res, next) => {
   console.log(`${new Date().toISOString()} - ${req.method} ${req.path} - Origin: ${req.headers.origin}`);
+  console.log('Headers:', req.headers);
   next();
 });
+
+// CORS preflight handler
+app.options('*', cors(corsOptions));
 
 // Health check endpoint
 app.get('/health', (req, res) => {
@@ -50,6 +48,15 @@ app.get('/health', (req, res) => {
     message: 'Server is running',
     timestamp: new Date().toISOString(),
     environment: process.env.NODE_ENV || 'development'
+  });
+});
+
+// Simple test endpoint without database
+app.get('/api/ping', (req, res) => {
+  res.json({ 
+    message: 'Pong!', 
+    timestamp: new Date().toISOString(),
+    cors: 'Working'
   });
 });
 
