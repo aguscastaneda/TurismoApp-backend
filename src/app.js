@@ -10,24 +10,16 @@ const helpRoutes = require("./routes/helpRoutes");
 const app = express();
 
 // CORS configuration
-const corsOptions = {
-  origin: true, // Permitir todos los orígenes temporalmente para debugging
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-  allowedHeaders: [
-    'Content-Type', 
-    'Authorization', 
-    'x-auth-token',
-    'Origin',
-    'Accept',
-    'X-Requested-With'
-  ],
-  exposedHeaders: ['Content-Range', 'X-Content-Range'],
-  maxAge: 86400 // 24 hours
-};
+const cors = require('cors');
+app.use(cors({
+  origin: ['https://turismo21.site', 'https://www.turismo21.site'], // tu frontend
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  credentials: true // si usás cookies o auth
+}));
+
 
 // Middleware
-app.use(cors(corsOptions));
+// app.use(cors(corsOptions));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
