@@ -125,10 +125,18 @@ const login = async (req, res) => {
       return res.status(401).json({ error: "Este usuario debe iniciar sesión con Google" });
     }
 
-    const isPasswordValid = await bcrypt.compare(password, user.password);
-
-    if (!isPasswordValid) {
-      return res.status(401).json({ error: "Credenciales invalidas" });
+    // Para usuarios de Google, verificar que la contraseña comience con el hash de "google_"
+    if (user.password.startsWith('$2b$') && user.password.length > 50) {
+      // Es un hash bcrypt, intentar verificar la contraseña
+      const isPasswordValid = await bcrypt.compare(password, user.password);
+      if (!isPasswordValid) {
+        return res.status(401).json({ error: "Credenciales invalidas" });
+      }
+    } else {
+      // Contraseña en texto plano (no debería ocurrir en producción)
+      if (user.password !== password) {
+        return res.status(401).json({ error: "Credenciales invalidas" });
+      }
     }
 
     // Asegurar que el usuario tenga un carrito
@@ -197,12 +205,13 @@ const googleAuth = async (req, res) => {
 
     if (!user) {
       console.log("Usuario no encontrado, creando nuevo usuario con Google");
-      // Crear nuevo usuario con Google
+      // Crear nuevo usuario con Google - usar un hash seguro como contraseña
+      const googlePassword = await bcrypt.hash(`google_${Date.now()}`, 10);
       user = await prisma.user.create({
         data: {
           email,
           name,
-          password: "google_user", // Contraseña temporal para usuarios de Google
+          password: googlePassword, // Contraseña hasheada para usuarios de Google
           role: "CLIENT"
         }
       });

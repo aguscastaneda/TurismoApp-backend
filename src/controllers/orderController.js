@@ -59,7 +59,7 @@ const createOrder = async (req, res) => {
       }
     ];
 
-    const order = await prisma.order.create({
+    const order = await prisma.orders.create({
       data: {
         userId: req.user.id,
         total: total.toFixed(2),
@@ -119,7 +119,7 @@ const createOrder = async (req, res) => {
     console.log("Preferencia de MP creada:", preferenceData);
 
     // Cambiar estado a "Procesando" cuando se crea la preferencia de pago
-    await prisma.order.update({
+    await prisma.orders.update({
       where: { id: order.id },
       data: { status: 1 }, // Procesando
     });
@@ -130,7 +130,7 @@ const createOrder = async (req, res) => {
 
     console.log("Carrito vaciado y orden completada");
 
-    const orderWithUser = await prisma.order.findUnique({
+    const orderWithUser = await prisma.orders.findUnique({
       where: { id: order.id },
       include: {
         user: true,
@@ -192,9 +192,9 @@ const handleWebhook = async (req, res) => {
       if (paymentData.status === "approved") {
         console.log("Pago aprobado, actualizando orden a COMPLETED");
 
-        const order = await prisma.order.update({
+        const order = await prisma.orders.update({
           where: { id: parseInt(orderId) },
-          data: { status: 4 },
+          data: { status: 2 }, // COMPLETED
           include: {
             user: true,
             items: {
@@ -205,29 +205,37 @@ const handleWebhook = async (req, res) => {
           },
         });
 
-        console.log("Orden encontrada:", order ? `ID ${order.id}` : "No encontrada");
-        console.log("Usuario:", order?.user?.email || "Sin email");
+        console.log("Orden actualizada:", order);
 
+        // Enviar email de confirmación
         try {
           await sendOrderConfirmationEmail(order.user.email, order);
-          console.log(`Email de confirmacion enviado a ${order.user.email}`);
+          console.log(`Email de confirmación enviado a ${order.user.email}`);
         } catch (emailError) {
-          console.error("Error enviando email de confirmacion:", emailError);
+          console.error("Error enviando email de confirmación:", emailError);
         }
+
+        // Actualizar stock de productos
+        for (const item of order.items) {
+          await prisma.product.update({
+            where: { id: item.productId },
+            data: { stock: { decrement: item.quantity } },
+          });
+        }
+
+        console.log("Stock de productos actualizado");
       } else if (paymentData.status === "pending") {
-        console.log("Pago pendiente, actualizando orden a PROCESSING");
-        await prisma.order.update({
+        console.log("Pago pendiente, actualizando orden a PENDING");
+        await prisma.orders.update({
           where: { id: parseInt(orderId) },
-          data: { status: 1 },
+          data: { status: 0 }, // PENDING
         });
-      } else if (paymentData.status === "rejected") {
-        console.log("Pago rechazado, actualizando orden a CANCELLED");
-        await prisma.order.update({
+      } else if (paymentData.status === "rejected" || paymentData.status === "cancelled") {
+        console.log("Pago rechazado/cancelado, actualizando orden a CANCELLED");
+        await prisma.orders.update({
           where: { id: parseInt(orderId) },
-          data: { status: 3 },
+          data: { status: 3 }, // CANCELLED
         });
-      } else {
-        console.log("Estado desconocido, manteniendo orden como PENDING");
       }
     }
 
@@ -240,14 +248,19 @@ const handleWebhook = async (req, res) => {
 
 const testWebhook = async (req, res) => {
   try {
-    const { orderId, status } = req.body;
+    console.log("=== TEST WEBHOOK ===");
+    
+    // Simular un pago aprobado para testing
+    const testOrderId = req.params.orderId;
+    
+    if (!testOrderId) {
+      return res.status(400).json({ error: "ID de orden requerido" });
+    }
 
-    console.log("=== PRUEBA DE WEBHOOK ===");
-    console.log("Orden ID:", orderId);
-    console.log("Estado:", status);
+    console.log("Simulando pago aprobado para orden:", testOrderId);
 
-    const order = await prisma.order.findUnique({
-      where: { id: parseInt(orderId) },
+    const order = await prisma.orders.findUnique({
+      where: { id: parseInt(testOrderId) },
       include: {
         user: true,
         items: {
@@ -262,12 +275,10 @@ const testWebhook = async (req, res) => {
       return res.status(404).json({ error: "Orden no encontrada" });
     }
 
-    console.log("Orden encontrada:", order.id);
-    console.log("Usuario:", order.user.email);
-
-    const updatedOrder = await prisma.order.update({
-      where: { id: parseInt(orderId) },
-      data: { status: parseInt(status) },
+    // Actualizar orden a COMPLETED
+    const updatedOrder = await prisma.orders.update({
+      where: { id: parseInt(testOrderId) },
+      data: { status: 2 }, // COMPLETED
       include: {
         user: true,
         items: {
@@ -278,30 +289,33 @@ const testWebhook = async (req, res) => {
       },
     });
 
+    console.log("Orden actualizada en test:", updatedOrder);
+
+    // Enviar email de confirmación
     try {
-      await sendOrderStatusUpdateEmail(order.user.email, updatedOrder, updatedOrder.status);
-      console.log(`Email de confirmacion enviado a ${order.user.email}`);
+      await sendOrderConfirmationEmail(updatedOrder.user.email, updatedOrder);
+      console.log(`Email de confirmación enviado a ${updatedOrder.user.email}`);
     } catch (emailError) {
-      console.error("Error enviando email de actualizacion:", emailError);
+      console.error("Error enviando email de confirmación:", emailError);
     }
 
-    res.json({
-      message: "Estado de orden actualizado correctamente",
-      order: updatedOrder,
+    res.json({ 
+      message: "Test webhook ejecutado correctamente", 
+      order: updatedOrder 
     });
   } catch (error) {
-    console.error("Error en prueba de webhook:", error);
-    res.status(500).json({ error: "Error interno del servidor" });
+    console.error("Error en test webhook:", error);
+    res.status(500).json({ error: "Error en test webhook" });
   }
 };
 
 const getOrders = async (req, res) => {
   try {
-    const { user } = req;
-
     let orders;
-    if (user.role === "ADMIN" || user.role === "SALES_MANAGER") {
-      orders = await prisma.order.findMany({
+
+    if (req.user.role === "ADMIN") {
+      // Administradores ven todas las órdenes
+      orders = await prisma.orders.findMany({
         include: {
           user: {
             select: {
@@ -315,20 +329,25 @@ const getOrders = async (req, res) => {
               product: true,
             },
           },
+          orderStatus: true,
         },
         orderBy: {
           createdAt: "desc",
         },
       });
     } else {
-      orders = await prisma.order.findMany({
-        where: { userId: user.id },
+      // Clientes ven solo sus órdenes
+      orders = await prisma.orders.findMany({
+        where: {
+          userId: req.user.id,
+        },
         include: {
           items: {
             include: {
               product: true,
             },
           },
+          orderStatus: true,
         },
         orderBy: {
           createdAt: "desc",
@@ -338,7 +357,7 @@ const getOrders = async (req, res) => {
 
     res.json(orders);
   } catch (error) {
-    console.error("Error obteniendo ordenes:", error);
+    console.error("Error obteniendo órdenes:", error);
     res.status(500).json({ error: "Error interno del servidor" });
   }
 };
@@ -347,15 +366,17 @@ const updateOrderStatus = async (req, res) => {
   try {
     const { orderId } = req.params;
     const { status } = req.body;
-    const { user } = req;
 
-    console.log("Actualizando estado de orden:", { orderId, status });
-
-    if (user.role !== "ADMIN" && user.role !== "SALES_MANAGER") {
-      return res.status(403).json({ error: "No tienes permisos para actualizar ordenes" });
+    if (!orderId || status === undefined) {
+      return res.status(400).json({ error: "ID de orden y estado son requeridos" });
     }
 
-    const existingOrder = await prisma.order.findUnique({
+    // Validar que el estado sea válido (0-3)
+    if (status < 0 || status > 3) {
+      return res.status(400).json({ error: "Estado inválido. Debe ser 0-3" });
+    }
+
+    const existingOrder = await prisma.orders.findUnique({
       where: { id: parseInt(orderId) },
       include: {
         user: true,
@@ -371,12 +392,7 @@ const updateOrderStatus = async (req, res) => {
       return res.status(404).json({ error: "Orden no encontrada" });
     }
 
-    const validStatuses = [0, 1, 2, 3];
-    if (!validStatuses.includes(parseInt(status))) {
-      return res.status(400).json({ error: "Estado invalido" });
-    }
-
-    const order = await prisma.order.update({
+    const order = await prisma.orders.update({
       where: { id: parseInt(orderId) },
       data: { status: parseInt(status) },
       include: {
@@ -386,20 +402,20 @@ const updateOrderStatus = async (req, res) => {
             product: true,
           },
         },
+        orderStatus: true,
       },
     });
 
-    console.log("Orden actualizada exitosamente:", order.id);
-
+    // Enviar email de actualización de estado
     try {
-      await sendOrderStatusUpdateEmail(order.user.email, order, order.status);
-      console.log(`Email de actualizacion de estado enviado a ${existingOrder.user.email}`);
+      await sendOrderStatusUpdateEmail(order.user.email, order);
+      console.log(`Email de actualización de estado enviado a ${order.user.email}`);
     } catch (emailError) {
-      console.error("Error enviando email de actualizacion:", emailError);
+      console.error("Error enviando email de actualización:", emailError);
     }
 
     res.json({
-      message: "Estado de orden actualizado correctamente",
+      message: "Estado de orden actualizado exitosamente",
       order,
     });
   } catch (error) {
@@ -411,48 +427,13 @@ const updateOrderStatus = async (req, res) => {
 const cancelOrder = async (req, res) => {
   try {
     const { orderId } = req.params;
-    const { user } = req;
 
-    console.log("Intentando cancelar orden:", { orderId, userId: user.id, userRole: user.role });
+    if (!orderId) {
+      return res.status(400).json({ error: "ID de orden es requerido" });
+    }
 
-    const order = await prisma.order.findUnique({
+    const order = await prisma.orders.findUnique({
       where: { id: parseInt(orderId) },
-      include: {
-        user: true,
-      },
-    });
-
-    console.log("Orden encontrada:", order);
-
-    if (!order) {
-      return res.status(404).json({ error: "Orden no encontrada" });
-    }
-
-    const isOwner = order.userId === user.id;
-    const isAdmin = user.role === "ADMIN" || user.role === "SALES_MANAGER";
-
-    console.log("Permisos:", { isOwner, isAdmin, orderUserId: order.userId, currentUserId: user.id });
-
-    if (!isOwner && !isAdmin) {
-      return res.status(403).json({ error: "No tienes permisos para cancelar esta orden" });
-    }
-
-    const CANCELABLE_STATUSES = [0, 1];
-
-    console.log("Estado actual de la orden:", order.status);
-    console.log("Estados cancelables:", CANCELABLE_STATUSES);
-
-    if (!CANCELABLE_STATUSES.includes(order.status)) {
-      return res.status(400).json({ 
-        error: "No se puede cancelar una orden que ya fue procesada o cancelada" 
-      });
-    }
-
-    console.log("Actualizando orden a estado CANCELLED (3)");
-
-    const cancelledOrder = await prisma.order.update({
-      where: { id: parseInt(orderId) },
-      data: { status: 3 },
       include: {
         user: true,
         items: {
@@ -463,12 +444,40 @@ const cancelOrder = async (req, res) => {
       },
     });
 
-    console.log("Orden cancelada exitosamente:", cancelledOrder.id);
+    if (!order) {
+      return res.status(404).json({ error: "Orden no encontrada" });
+    }
 
+    // Verificar que el usuario solo pueda cancelar sus propias órdenes (a menos que sea admin)
+    if (req.user.role !== "ADMIN" && order.userId !== req.user.id) {
+      return res.status(403).json({ error: "No tienes permiso para cancelar esta orden" });
+    }
+
+    // Verificar que la orden no esté ya completada o cancelada
+    if (order.status === 2 || order.status === 3) {
+      return res.status(400).json({ error: "No se puede cancelar una orden completada o ya cancelada" });
+    }
+
+    const cancelledOrder = await prisma.orders.update({
+      where: { id: parseInt(orderId) },
+      data: { status: 3 }, // CANCELLED
+      include: {
+        user: true,
+        items: {
+          include: {
+            product: true,
+          },
+        },
+        orderStatus: true,
+      },
+    });
+
+    // Enviar email de cancelación
     try {
-      await sendOrderStatusUpdateEmail(cancelledOrder.user.email, cancelledOrder, cancelledOrder.status);
+      await sendOrderStatusUpdateEmail(cancelledOrder.user.email, cancelledOrder);
+      console.log(`Email de cancelación enviado a ${cancelledOrder.user.email}`);
     } catch (emailError) {
-      console.error("Error enviando email de cancelacion:", emailError);
+      console.error("Error enviando email de cancelación:", emailError);
     }
 
     res.json({
