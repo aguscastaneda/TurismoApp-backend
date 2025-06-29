@@ -221,6 +221,12 @@ const sendOrderStatusUpdateEmail = async (email, orderDetails, newStatus) => {
     3: '❌'
   };
 
+  // Si newStatus no se proporciona, usar el status de la orden
+  const status = newStatus !== undefined ? newStatus : orderDetails.status;
+  const statusText = statusTexts[status] || 'DESCONOCIDO';
+  const statusColor = statusColors[status] || '#6b7280';
+  const statusIcon = statusIcons[status] || '❓';
+
   const mailOptions = {
     from: process.env.EMAIL_USER,
     to: email,
@@ -255,14 +261,15 @@ const sendOrderStatusUpdateEmail = async (email, orderDetails, newStatus) => {
             </div>
           </div>
 
-          <div style="background-color: ${statusColors[newStatus]}15; border: 2px solid ${statusColors[newStatus]}; padding: 25px; border-radius: 8px; margin: 30px 0; text-align: center;">
-            <div style="font-size: 36px; margin-bottom: 15px;">${statusIcons[newStatus]}</div>
-            <h3 style="color: ${statusColors[newStatus]}; margin: 0; font-size: 20px; font-weight: 600;">Nuevo Estado: ${statusTexts[newStatus]}</h3>
+          <div style="background-color: ${statusColor}15; border: 2px solid ${statusColor}; padding: 25px; border-radius: 8px; margin: 30px 0; text-align: center;">
+            <div style="font-size: 36px; margin-bottom: 15px;">${statusIcon}</div>
+            <h3 style="color: ${statusColor}; margin: 0; font-size: 20px; font-weight: 600;">Nuevo Estado: ${statusText}</h3>
             <p style="color: #6b7280; margin: 10px 0 0 0; font-size: 16px;">
-              ${newStatus === 0 ? 'Tu orden está siendo revisada' : 
-                newStatus === 1 ? 'Tu orden está siendo procesada' :
-                newStatus === 2 ? '¡Tu orden ha sido completada!' :
-                'Tu orden ha sido cancelada'}
+              ${status === 0 ? 'Tu orden está siendo revisada' : 
+                status === 1 ? 'Tu orden está siendo procesada' :
+                status === 2 ? '¡Tu orden ha sido completada!' :
+                status === 3 ? 'Tu orden ha sido cancelada' :
+                'Tu orden ha sido actualizada'}
             </p>
           </div>
 
