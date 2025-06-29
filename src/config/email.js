@@ -54,14 +54,53 @@ const sendVerificationEmail = async (email, code) => {
 
 // Funcion para enviar correo de compra exitosa
 const sendPurchaseEmail = async (email, orderDetails) => {
+  // Tasas de cambio para conversión USD a ARS
+  const exchangeRates = {
+    EUR: 1.0000,
+    USD: 1.0870,
+    ARS: 1358.7086
+  };
+
+  // Función para convertir moneda
+  const convertCurrency = (amount, fromCurrency, toCurrency, rates) => {
+    if (fromCurrency === toCurrency) return amount;
+    
+    const fromRate = rates[fromCurrency];
+    const toRate = rates[toCurrency];
+    
+    if (!fromRate || !toRate) return amount;
+    
+    // Convertir: fromCurrency -> EUR -> toCurrency
+    const amountInEUR = amount / fromRate;
+    return amountInEUR * toRate;
+  };
+
+  // Calcular totales en USD y ARS
+  const subtotalUSD = orderDetails.items.reduce((sum, item) => sum + parseFloat(item.price) * item.quantity, 0);
+  const taxesUSD = subtotalUSD * 0.21;
+  const totalUSD = subtotalUSD + taxesUSD;
+
+  // Convertir a pesos argentinos
+  const subtotalARS = convertCurrency(subtotalUSD, 'USD', 'ARS', exchangeRates);
+  const taxesARS = convertCurrency(taxesUSD, 'USD', 'ARS', exchangeRates);
+  const totalARS = convertCurrency(totalUSD, 'USD', 'ARS', exchangeRates);
+
   // Crear tabla HTML con los items
-  const itemsTable = orderDetails.items.map(item => `
-    <tr>
-      <td style="padding: 15px; border-bottom: 1px solid #e5e7eb; color: #374151;">${item.product ? item.product.name : item.name}</td>
-      <td style="padding: 15px; border-bottom: 1px solid #e5e7eb; text-align: center; color: #6b7280;">${item.quantity}</td>
-      <td style="padding: 15px; border-bottom: 1px solid #e5e7eb; text-align: right; color: #374151; font-weight: 600;">$${(item.price * 1000).toLocaleString('es-AR')}</td>
-    </tr>
-  `).join('');
+  const itemsTable = orderDetails.items.map(item => {
+    const priceUSD = parseFloat(item.price);
+    const priceARS = convertCurrency(priceUSD, 'USD', 'ARS', exchangeRates);
+    const totalItemUSD = priceUSD * item.quantity;
+    const totalItemARS = convertCurrency(totalItemUSD, 'USD', 'ARS', exchangeRates);
+    
+    return `
+      <tr>
+        <td style="padding: 15px; border-bottom: 1px solid #e5e7eb; color: #374151;">${item.product ? item.product.name : item.name}</td>
+        <td style="padding: 15px; border-bottom: 1px solid #e5e7eb; text-align: center; color: #6b7280;">${item.quantity}</td>
+        <td style="padding: 15px; border-bottom: 1px solid #e5e7eb; text-align: right; color: #374151; font-weight: 600;">$${priceARS.toLocaleString('es-AR', {minimumFractionDigits: 2})}</td>
+        <td style="padding: 15px; border-bottom: 1px solid #e5e7eb; text-align: right; color: #374151; font-weight: 600;">$${totalItemARS.toLocaleString('es-AR', {minimumFractionDigits: 2})}</td>
+      </tr>
+    `;
+  }).join('');
 
   const mailOptions = {
     from: process.env.EMAIL_USER,
@@ -100,7 +139,8 @@ const sendPurchaseEmail = async (email, orderDetails) => {
                 <tr style="background-color: #f3f4f6;">
                   <th style="padding: 15px; text-align: left; color: #374151; font-weight: 600; font-size: 14px;">Producto</th>
                   <th style="padding: 15px; text-align: center; color: #374151; font-weight: 600; font-size: 14px;">Cantidad</th>
-                  <th style="padding: 15px; text-align: right; color: #374151; font-weight: 600; font-size: 14px;">Precio</th>
+                  <th style="padding: 15px; text-align: right; color: #374151; font-weight: 600; font-size: 14px;">Precio Unit.</th>
+                  <th style="padding: 15px; text-align: right; color: #374151; font-weight: 600; font-size: 14px;">Subtotal</th>
                 </tr>
               </thead>
               <tbody>
@@ -109,11 +149,35 @@ const sendPurchaseEmail = async (email, orderDetails) => {
             </table>
           </div>
 
-          <div style="background-color: #2563eb; padding: 20px; border-radius: 8px; margin: 30px 0; text-align: center;">
-            <div style="display: flex; justify-content: space-between; align-items: center; color: white;">
-              <span style="font-size: 18px; font-weight: 500;">Total:</span>
-              <span style="font-size: 22px; font-weight: bold;">$${(orderDetails.total * 1000).toLocaleString('es-AR')}</span>
+          <div style="background-color: #f8fafc; padding: 25px; border-radius: 8px; margin: 30px 0;">
+            <h3 style="color: #374151; margin: 0 0 20px 0; font-size: 18px;">Resumen de Cuenta</h3>
+            <div style="space-y: 3;">
+              <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #e2e8f0;">
+                <span style="color: #64748b; font-size: 16px;">Subtotal (productos):</span>
+                <span style="color: #374151; font-size: 16px; font-weight: 600;">$${subtotalARS.toLocaleString('es-AR', {minimumFractionDigits: 2})}</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #e2e8f0;">
+                <span style="color: #64748b; font-size: 16px;">Impuestos (21%):</span>
+                <span style="color: #374151; font-size: 16px; font-weight: 600;">$${taxesARS.toLocaleString('es-AR', {minimumFractionDigits: 2})}</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-top: 2px solid #10b981; margin-top: 8px;">
+                <span style="color: #10b981; font-size: 18px; font-weight: 600;">Total pagado:</span>
+                <span style="color: #10b981; font-size: 20px; font-weight: bold;">$${totalARS.toLocaleString('es-AR', {minimumFractionDigits: 2})}</span>
+              </div>
             </div>
+          </div>
+
+          <div style="background-color: #10b981; padding: 20px; border-radius: 8px; margin: 30px 0; text-align: center;">
+            <div style="display: flex; justify-content: space-between; align-items: center; color: white;">
+              <span style="font-size: 18px; font-weight: 500;">Total Final:</span>
+              <span style="font-size: 22px; font-weight: bold;">$${totalARS.toLocaleString('es-AR', {minimumFractionDigits: 2})}</span>
+            </div>
+          </div>
+
+          <div style="background-color: #f0f9ff; border: 1px solid #0ea5e9; padding: 15px; border-radius: 8px; margin: 20px 0;">
+            <p style="color: #0369a1; font-size: 14px; margin: 0; text-align: center;">
+              <strong>💡 Información:</strong> Los precios están convertidos a pesos argentinos usando la tasa de cambio actual (1 USD = $${exchangeRates.ARS.toLocaleString('es-AR')} ARS)
+            </p>
           </div>
 
           <p style="text-align: center; color: #6b7280; margin-top: 30px; font-size: 16px; line-height: 1.6;">
@@ -222,14 +286,53 @@ const sendOrderStatusUpdateEmail = async (email, orderDetails, newStatus) => {
 
 // Funcion para enviar correo de orden creada
 const sendOrderCreatedEmail = async (email, orderDetails) => {
-  // Crear tabla HTML con los items
-  const itemsTable = orderDetails.items.map(item => `
-    <tr>
-      <td style="padding: 15px; border-bottom: 1px solid #e5e7eb; color: #374151;">${item.product ? item.product.name : item.name}</td>
-      <td style="padding: 15px; border-bottom: 1px solid #e5e7eb; text-align: center; color: #6b7280;">${item.quantity}</td>
-      <td style="padding: 15px; border-bottom: 1px solid #e5e7eb; text-align: right; color: #374151; font-weight: 600;">$${(item.price * 1000).toLocaleString('es-AR')}</td>
-    </tr>
-  `).join('');
+  // Tasas de cambio para conversión USD a ARS
+  const exchangeRates = {
+    EUR: 1.0000,
+    USD: 1.0870,
+    ARS: 1358.7086
+  };
+
+  // Función para convertir moneda
+  const convertCurrency = (amount, fromCurrency, toCurrency, rates) => {
+    if (fromCurrency === toCurrency) return amount;
+    
+    const fromRate = rates[fromCurrency];
+    const toRate = rates[toCurrency];
+    
+    if (!fromRate || !toRate) return amount;
+    
+    // Convertir: fromCurrency -> EUR -> toCurrency
+    const amountInEUR = amount / fromRate;
+    return amountInEUR * toRate;
+  };
+
+  // Calcular totales en USD y ARS
+  const subtotalUSD = orderDetails.items.reduce((sum, item) => sum + parseFloat(item.price) * item.quantity, 0);
+  const taxesUSD = subtotalUSD * 0.21;
+  const totalUSD = subtotalUSD + taxesUSD;
+
+  // Convertir a pesos argentinos
+  const subtotalARS = convertCurrency(subtotalUSD, 'USD', 'ARS', exchangeRates);
+  const taxesARS = convertCurrency(taxesUSD, 'USD', 'ARS', exchangeRates);
+  const totalARS = convertCurrency(totalUSD, 'USD', 'ARS', exchangeRates);
+
+  // Crear tabla HTML con los items (precios en USD)
+  const itemsTable = orderDetails.items.map(item => {
+    const priceUSD = parseFloat(item.price);
+    const priceARS = convertCurrency(priceUSD, 'USD', 'ARS', exchangeRates);
+    const totalItemUSD = priceUSD * item.quantity;
+    const totalItemARS = convertCurrency(totalItemUSD, 'USD', 'ARS', exchangeRates);
+    
+    return `
+      <tr>
+        <td style="padding: 15px; border-bottom: 1px solid #e5e7eb; color: #374151;">${item.product ? item.product.name : item.name}</td>
+        <td style="padding: 15px; border-bottom: 1px solid #e5e7eb; text-align: center; color: #6b7280;">${item.quantity}</td>
+        <td style="padding: 15px; border-bottom: 1px solid #e5e7eb; text-align: right; color: #374151; font-weight: 600;">$${priceARS.toLocaleString('es-AR', {minimumFractionDigits: 2})}</td>
+        <td style="padding: 15px; border-bottom: 1px solid #e5e7eb; text-align: right; color: #374151; font-weight: 600;">$${totalItemARS.toLocaleString('es-AR', {minimumFractionDigits: 2})}</td>
+      </tr>
+    `;
+  }).join('');
 
   const mailOptions = {
     from: process.env.EMAIL_USER,
@@ -276,7 +379,8 @@ const sendOrderCreatedEmail = async (email, orderDetails) => {
                 <tr style="background-color: #f3f4f6;">
                   <th style="padding: 15px; text-align: left; color: #374151; font-weight: 600; font-size: 14px;">Producto</th>
                   <th style="padding: 15px; text-align: center; color: #374151; font-weight: 600; font-size: 14px;">Cantidad</th>
-                  <th style="padding: 15px; text-align: right; color: #374151; font-weight: 600; font-size: 14px;">Precio</th>
+                  <th style="padding: 15px; text-align: right; color: #374151; font-weight: 600; font-size: 14px;">Precio Unit.</th>
+                  <th style="padding: 15px; text-align: right; color: #374151; font-weight: 600; font-size: 14px;">Subtotal</th>
                 </tr>
               </thead>
               <tbody>
@@ -285,11 +389,35 @@ const sendOrderCreatedEmail = async (email, orderDetails) => {
             </table>
           </div>
 
+          <div style="background-color: #f8fafc; padding: 25px; border-radius: 8px; margin: 30px 0;">
+            <h3 style="color: #374151; margin: 0 0 20px 0; font-size: 18px;">Resumen de Cuenta</h3>
+            <div style="space-y: 3;">
+              <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #e2e8f0;">
+                <span style="color: #64748b; font-size: 16px;">Subtotal (productos):</span>
+                <span style="color: #374151; font-size: 16px; font-weight: 600;">$${subtotalARS.toLocaleString('es-AR', {minimumFractionDigits: 2})}</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #e2e8f0;">
+                <span style="color: #64748b; font-size: 16px;">Impuestos (21%):</span>
+                <span style="color: #374151; font-size: 16px; font-weight: 600;">$${taxesARS.toLocaleString('es-AR', {minimumFractionDigits: 2})}</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-top: 2px solid #2563eb; margin-top: 8px;">
+                <span style="color: #2563eb; font-size: 18px; font-weight: 600;">Total a cobrar:</span>
+                <span style="color: #2563eb; font-size: 20px; font-weight: bold;">$${totalARS.toLocaleString('es-AR', {minimumFractionDigits: 2})}</span>
+              </div>
+            </div>
+          </div>
+
           <div style="background-color: #2563eb; padding: 20px; border-radius: 8px; margin: 30px 0; text-align: center;">
             <div style="display: flex; justify-content: space-between; align-items: center; color: white;">
-              <span style="font-size: 18px; font-weight: 500;">Total:</span>
-              <span style="font-size: 22px; font-weight: bold;">$${(orderDetails.total * 1000).toLocaleString('es-AR')}</span>
+              <span style="font-size: 18px; font-weight: 500;">Total Final:</span>
+              <span style="font-size: 22px; font-weight: bold;">$${totalARS.toLocaleString('es-AR', {minimumFractionDigits: 2})}</span>
             </div>
+          </div>
+
+          <div style="background-color: #f0f9ff; border: 1px solid #0ea5e9; padding: 15px; border-radius: 8px; margin: 20px 0;">
+            <p style="color: #0369a1; font-size: 14px; margin: 0; text-align: center;">
+              <strong>💡 Información:</strong> Los precios están convertidos a pesos argentinos usando la tasa de cambio actual (1 USD = $${exchangeRates.ARS.toLocaleString('es-AR')} ARS)
+            </p>
           </div>
 
           <p style="text-align: center; color: #6b7280; margin-top: 30px; font-size: 16px; line-height: 1.6;">
