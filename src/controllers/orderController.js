@@ -1,6 +1,7 @@
 const { PrismaClient } = require("@prisma/client");
 const { MercadoPagoConfig, Preference, Payment } = require("mercadopago");
 const { sendOrderConfirmationEmail, sendOrderStatusUpdateEmail, sendOrderCreatedEmail } = require("../config/email");
+const axios = require('axios');
 
 const prisma = new PrismaClient();
 
@@ -8,6 +9,42 @@ const prisma = new PrismaClient();
 const client = new MercadoPagoConfig({ 
   accessToken: process.env.MERCADOPAGO_ACCESS_TOKEN 
 });
+
+// Función para obtener tasas de cambio
+const getExchangeRates = async () => {
+  // Usar directamente las tasas simuladas para evitar bucles
+  // Estas tasas coinciden con las del controlador de moneda
+  return {
+    EUR: 1.0000,
+    USD: 1.0870,
+    GBP: 0.8558,
+    JPY: 163.0435,
+    AUD: 1.6522,
+    CAD: 1.4674,
+    CHF: 0.9565,
+    CNY: 7.8261,
+    ARS: 1358.7086,
+    CLP: 1100.0157,
+    COP: 4736.9395,
+    MXN: 22.1275,
+    PEN: 4.1276,
+    UYU: 46.8593
+  };
+};
+
+// Función para convertir moneda
+const convertCurrency = (amount, fromCurrency, toCurrency, rates) => {
+  if (fromCurrency === toCurrency) return amount;
+  
+  const fromRate = rates[fromCurrency];
+  const toRate = rates[toCurrency];
+  
+  if (!fromRate || !toRate) return amount;
+  
+  // Convertir: fromCurrency -> EUR -> toCurrency
+  const amountInEUR = amount / fromRate;
+  return amountInEUR * toRate;
+};
 
 const createOrder = async (req, res) => {
   try {
@@ -31,30 +68,49 @@ const createOrder = async (req, res) => {
 
     console.log("Items carrito:", cart.items);
 
-    const subtotal = cart.items.reduce((sum, item) => sum + parseFloat(item.product.price) * item.quantity, 0);
-    const taxes = subtotal * 0.21;
-    const total = subtotal + taxes;
+    // Obtener tasas de cambio
+    const exchangeRates = await getExchangeRates();
+    console.log("Tasas de cambio obtenidas:", exchangeRates);
 
-    console.log("Subtotal:", subtotal);
-    console.log("Impuestos (21%):", taxes);
-    console.log("Total con impuestos:", total);
+    // Calcular subtotal en USD (precios originales)
+    const subtotalUSD = cart.items.reduce((sum, item) => sum + parseFloat(item.product.price) * item.quantity, 0);
+    const taxesUSD = subtotalUSD * 0.21;
+    const totalUSD = subtotalUSD + taxesUSD;
 
-    // Crear items para MercadoPago incluyendo los impuestos
+    console.log("Subtotal (USD):", subtotalUSD);
+    console.log("Impuestos (USD):", taxesUSD);
+    console.log("Total (USD):", totalUSD);
+
+    // Convertir a pesos argentinos
+    const subtotalARS = convertCurrency(subtotalUSD, 'USD', 'ARS', exchangeRates);
+    const taxesARS = convertCurrency(taxesUSD, 'USD', 'ARS', exchangeRates);
+    const totalARS = convertCurrency(totalUSD, 'USD', 'ARS', exchangeRates);
+
+    console.log("Subtotal (ARS):", subtotalARS);
+    console.log("Impuestos (ARS):", taxesARS);
+    console.log("Total (ARS):", totalARS);
+
+    // Crear items para MercadoPago con precios convertidos a ARS
     const items = [
       // Items de productos
-      ...cart.items.map((item) => ({
-        id: item.product.id,
-        title: item.product.name,
-        quantity: item.quantity,
-        unit_price: parseFloat(item.product.price),
-        currency_id: "ARS",
-      })),
+      ...cart.items.map((item) => {
+        const priceUSD = parseFloat(item.product.price);
+        const priceARS = convertCurrency(priceUSD, 'USD', 'ARS', exchangeRates);
+        
+        return {
+          id: item.product.id,
+          title: item.product.name,
+          quantity: item.quantity,
+          unit_price: priceARS,
+          currency_id: "ARS",
+        };
+      }),
       // Item de impuestos
       {
         id: "taxes",
         title: "Impuestos (21%)",
         quantity: 1,
-        unit_price: taxes,
+        unit_price: taxesARS,
         currency_id: "ARS",
       }
     ];
@@ -62,13 +118,13 @@ const createOrder = async (req, res) => {
     const order = await prisma.orders.create({
       data: {
         userId: req.user.id,
-        total: total.toFixed(2),
+        total: totalARS.toFixed(2), // Guardar el total en ARS
         status: 0,
         items: {
           create: cart.items.map((item) => ({
             productId: item.productId,
             quantity: item.quantity,
-            price: parseFloat(item.product.price),
+            price: parseFloat(item.product.price), // Mantener precio original en USD en la BD
           })),
         },
       },
