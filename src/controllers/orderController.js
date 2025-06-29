@@ -282,16 +282,48 @@ const handleWebhook = async (req, res) => {
         console.log("Stock de productos actualizado");
       } else if (paymentData.status === "pending") {
         console.log("Pago pendiente, actualizando orden a PENDING");
-        await prisma.orders.update({
+        const pendingOrder = await prisma.orders.update({
           where: { id: parseInt(orderId) },
           data: { status: 0 }, // PENDING
+          include: {
+            user: true,
+            items: {
+              include: {
+                product: true,
+              },
+            },
+          },
         });
+        
+        // Enviar email de actualización
+        try {
+          await sendOrderStatusUpdateEmail(pendingOrder.user.email, pendingOrder, 0);
+          console.log(`Email de actualización enviado a ${pendingOrder.user.email}`);
+        } catch (emailError) {
+          console.error("Error enviando email de actualización:", emailError);
+        }
       } else if (paymentData.status === "rejected" || paymentData.status === "cancelled") {
         console.log("Pago rechazado/cancelado, actualizando orden a CANCELLED");
-        await prisma.orders.update({
+        const cancelledOrder = await prisma.orders.update({
           where: { id: parseInt(orderId) },
           data: { status: 3 }, // CANCELLED
+          include: {
+            user: true,
+            items: {
+              include: {
+                product: true,
+              },
+            },
+          },
         });
+        
+        // Enviar email de cancelación
+        try {
+          await sendOrderStatusUpdateEmail(cancelledOrder.user.email, cancelledOrder, 3);
+          console.log(`Email de cancelación enviado a ${cancelledOrder.user.email}`);
+        } catch (emailError) {
+          console.error("Error enviando email de cancelación:", emailError);
+        }
       }
     }
 
@@ -464,7 +496,7 @@ const updateOrderStatus = async (req, res) => {
 
     // Enviar email de actualización de estado
     try {
-      await sendOrderStatusUpdateEmail(order.user.email, order);
+      await sendOrderStatusUpdateEmail(order.user.email, order, parseInt(status));
       console.log(`Email de actualización de estado enviado a ${order.user.email}`);
     } catch (emailError) {
       console.error("Error enviando email de actualización:", emailError);
@@ -530,7 +562,7 @@ const cancelOrder = async (req, res) => {
 
     // Enviar email de cancelación
     try {
-      await sendOrderStatusUpdateEmail(cancelledOrder.user.email, cancelledOrder);
+      await sendOrderStatusUpdateEmail(cancelledOrder.user.email, cancelledOrder, 3);
       console.log(`Email de cancelación enviado a ${cancelledOrder.user.email}`);
     } catch (emailError) {
       console.error("Error enviando email de cancelación:", emailError);
