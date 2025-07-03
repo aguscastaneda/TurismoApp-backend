@@ -2,8 +2,8 @@ require("dotenv").config(); // Carga las variables del archivo .env
 const nodemailer = require("nodemailer");
 
 // Validar variables críticas
-if (!process.env.SENDGRID_API_KEY || !process.env.EMAIL_USER) {
-  console.error("❌ ERROR: Faltan SENDGRID_API_KEY o EMAIL_USER en el archivo .env");
+if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+  console.error("❌ ERROR: Faltan EMAIL_USER o EMAIL_PASS en el archivo .env");
   process.exit(1);
 }
 
@@ -12,11 +12,16 @@ const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
     user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASSWORD,
+    pass: process.env.EMAIL_PASS,
   },
   tls: {
     rejectUnauthorized: false, // Permitir certificados autofirmados
   },
+  secure: false,
+  port: 587,
+  requireTLS: true,
+  debug: true,
+  logger: true
 });
 
 // === FUNCIÓN: Correo de verificación ===
