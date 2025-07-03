@@ -121,10 +121,16 @@ const createOrder = async (req, res) => {
         total: totalARS.toFixed(2), // Guardar el total en ARS
         status: 0,
         items: {
-          create: cart.items.map((item) => ({
+          create: req.body.items.map((item) => ({
             productId: item.productId,
             quantity: item.quantity,
-            price: parseFloat(item.product.price), // Mantener precio original en USD en la BD
+            price: parseFloat(
+              cart.items.find((ci) => ci.productId === item.productId).product.price
+            ),
+            fechaIda: item.fechaIda || null,
+            fechaVuelta: item.fechaVuelta || null,
+            horaIda: item.horaIda || null,
+            horaVuelta: item.horaVuelta || null,
           })),
         },
       },
