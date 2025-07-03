@@ -2,8 +2,8 @@ require("dotenv").config(); // Carga las variables del archivo .env
 const nodemailer = require("nodemailer");
 
 // Validar variables críticas
-if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
-  console.error("❌ ERROR: Faltan EMAIL_USER o EMAIL_PASS en el archivo .env");
+if (!process.env.EMAIL_USER || !process.env.EMAIL_PASSWORD) {
+  console.error("❌ ERROR: Faltan EMAIL_USER o EMAIL_PASSWORD en el archivo .env");
   process.exit(1);
 }
 
@@ -12,7 +12,7 @@ const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
     user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
+    pass: process.env.EMAIL_PASSWORD,
   },
   tls: {
     rejectUnauthorized: false, // Permitir certificados autofirmados
