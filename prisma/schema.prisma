@@ -96,6 +96,10 @@ model OrderItem {
   updatedAt DateTime  @default(now()) @updatedAt @db.DateTime(0)
   order     Orders    @relation(fields: [orderId], references: [id])
   product   Product   @relation(fields: [productId], references: [id])
+  fechaIda     String?
+  fechaVuelta  String?
+  horaIda      String?
+  horaVuelta   String?
 
   @@map("OrderItem")
 }
