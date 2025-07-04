@@ -312,6 +312,23 @@ const sendOrderCreatedEmail = async (email, orderDetails) => {
 
 // === FUNCIÓN: Correo de actualización de estado ===
 const sendOrderStatusUpdateEmail = async (email, orderDetails, newStatus) => {
+  // Tasas de cambio para conversión USD a ARS
+  const exchangeRates = {
+    EUR: 1.0000,
+    USD: 1.0870,
+    ARS: 1358.7086
+  };
+
+  // Función para convertir moneda
+  const convertCurrency = (amount, fromCurrency, toCurrency, rates) => {
+    if (fromCurrency === toCurrency) return amount;
+    const fromRate = rates[fromCurrency];
+    const toRate = rates[toCurrency];
+    if (!fromRate || !toRate) return amount;
+    const amountInEUR = amount / fromRate;
+    return amountInEUR * toRate;
+  };
+
   const statusTexts = {
     0: 'PENDIENTE',
     1: 'EN PROCESO',
@@ -322,15 +339,161 @@ const sendOrderStatusUpdateEmail = async (email, orderDetails, newStatus) => {
   const status = newStatus ?? orderDetails.status;
   const statusText = statusTexts[status] || 'DESCONOCIDO';
 
+  // Configuración de colores y iconos según el estado
+  const statusConfig = {
+    0: {
+      color: '#f59e0b',
+      bgColor: '#fef3c7',
+      borderColor: '#f59e0b',
+      icon: '⏳',
+      title: 'Pendiente de Pago',
+      description: 'Tu orden está esperando la confirmación del pago'
+    },
+    1: {
+      color: '#3b82f6',
+      bgColor: '#dbeafe',
+      borderColor: '#3b82f6',
+      icon: '🔄',
+      title: 'En Proceso',
+      description: 'Tu orden está siendo procesada'
+    },
+    2: {
+      color: '#10b981',
+      bgColor: '#d1fae5',
+      borderColor: '#10b981',
+      icon: '✅',
+      title: 'Completada',
+      description: '¡Tu orden ha sido completada exitosamente!'
+    },
+    3: {
+      color: '#ef4444',
+      bgColor: '#fee2e2',
+      borderColor: '#ef4444',
+      icon: '❌',
+      title: 'Cancelada',
+      description: 'Tu orden ha sido cancelada'
+    }
+  };
+
+  const config = statusConfig[status] || statusConfig[0];
+
+  // Calcular totales en USD y ARS
+  const subtotalUSD = orderDetails.items.reduce((sum, item) => sum + parseFloat(item.price) * item.quantity, 0);
+  const taxesUSD = subtotalUSD * 0.21;
+  const totalUSD = subtotalUSD + taxesUSD;
+
+  // Convertir a pesos argentinos
+  const subtotalARS = convertCurrency(subtotalUSD, 'USD', 'ARS', exchangeRates);
+  const taxesARS = convertCurrency(taxesUSD, 'USD', 'ARS', exchangeRates);
+  const totalARS = convertCurrency(totalUSD, 'USD', 'ARS', exchangeRates);
+
+  // Crear tabla HTML con los items (productos)
+  const itemsTable = orderDetails.items.map(item => {
+    const priceUSD = parseFloat(item.price);
+    const priceARS = convertCurrency(priceUSD, 'USD', 'ARS', exchangeRates);
+    const totalItemUSD = priceUSD * item.quantity;
+    const totalItemARS = convertCurrency(totalItemUSD, 'USD', 'ARS', exchangeRates);
+    return `
+      <tr>
+        <td style="padding: 15px; border-bottom: 1px solid #e5e7eb; color: #374151;">${item.product ? item.product.name : item.name}</td>
+        <td style="padding: 15px; border-bottom: 1px solid #e5e7eb; text-align: center; color: #6b7280;">${item.quantity}</td>
+        <td style="padding: 15px; border-bottom: 1px solid #e5e7eb; text-align: right; color: #374151; font-weight: 600;">$${priceARS.toLocaleString('es-AR', {minimumFractionDigits: 2})}</td>
+        <td style="padding: 15px; border-bottom: 1px solid #e5e7eb; text-align: right; color: #374151; font-weight: 600;">$${totalItemARS.toLocaleString('es-AR', {minimumFractionDigits: 2})}</td>
+      </tr>
+    `;
+  }).join('');
+
   const mailOptions = {
     from: process.env.EMAIL_USER,
     to: email,
-    subject: `Estado de orden #${orderDetails.id} actualizado - TurismoApp`,
+    subject: `Actualización de Orden #${orderDetails.id} - TurismoApp`,
     html: `
-      <h2>Actualización de Estado</h2>
-      <p>Tu orden #${orderDetails.id} ahora está: <strong>${statusText}</strong></p>
-      <p>Fecha: ${new Date(orderDetails.createdAt || orderDetails.date).toLocaleString('es-AR')}</p>
-      <p>Total: $${(orderDetails.total * 1000).toLocaleString('es-AR')}</p>
+      <div style="max-width: 600px; margin: 0 auto; padding: 20px; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f8f9fa;">
+        <div style="background-color: white; padding: 40px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08);">
+          <h2 style="color: #2563eb; text-align: center; margin-bottom: 10px; font-size: 28px; font-weight: 300;">Actualización de Orden</h2>
+          <p style="text-align: center; color: #6b7280; margin-bottom: 40px; font-size: 16px;">Tu orden ha sido actualizada</p>
+          
+          <div style="background-color: ${config.bgColor}; border: 2px solid ${config.borderColor}; padding: 25px; border-radius: 8px; margin: 30px 0; text-align: center;">
+            <div style="font-size: 36px; margin-bottom: 15px;">${config.icon}</div>
+            <h3 style="color: ${config.color}; margin: 0; font-size: 20px; font-weight: 600;">${config.title}</h3>
+            <p style="color: ${config.color}; margin: 10px 0 0 0; font-size: 16px;">
+              ${config.description}
+            </p>
+          </div>
+
+          <div style="background-color: #f3f4f6; padding: 25px; border-radius: 8px; margin-bottom: 30px;">
+            <h3 style="color: #374151; margin: 0 0 20px 0; font-size: 18px;">Detalles de la Orden</h3>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+              <div>
+                <strong style="color: #6b7280; font-size: 14px;">Número de orden:</strong><br>
+                <span style="color: #374151; font-size: 16px; font-weight: 600;">#${orderDetails.id}</span>
+              </div>
+              <div>
+                <strong style="color: #6b7280; font-size: 14px;">Fecha:</strong><br>
+                <span style="color: #374151; font-size: 14px;">${new Date(orderDetails.createdAt || orderDetails.date).toLocaleDateString('es-AR', {
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit'
+                })}</span>
+              </div>
+            </div>
+          </div>
+
+          <h3 style="color: #374151; margin: 30px 0 20px 0; font-size: 18px;">Productos en tu Orden</h3>
+          <div style="background-color: #f9fafb; border-radius: 8px; overflow: hidden; border: 1px solid #e5e7eb;">
+            <table style="width: 100%; border-collapse: collapse;">
+              <thead>
+                <tr style="background-color: #f3f4f6;">
+                  <th style="padding: 15px; text-align: left; color: #374151; font-weight: 600; font-size: 14px;">Producto</th>
+                  <th style="padding: 15px; text-align: center; color: #374151; font-weight: 600; font-size: 14px;">Cantidad</th>
+                  <th style="padding: 15px; text-align: right; color: #374151; font-weight: 600; font-size: 14px;">Precio Unit.</th>
+                  <th style="padding: 15px; text-align: right; color: #374151; font-weight: 600; font-size: 14px;">Subtotal</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${itemsTable}
+              </tbody>
+            </table>
+          </div>
+
+          <div style="background-color: #f8fafc; padding: 25px; border-radius: 8px; margin: 30px 0;">
+            <h3 style="color: #374151; margin: 0 0 20px 0; font-size: 18px;">Resumen de Cuenta</h3>
+            <div style="space-y: 3;">
+              <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #e2e8f0;">
+                <span style="color: #64748b; font-size: 16px;">Subtotal (productos):</span>
+                <span style="color: #374151; font-size: 16px; font-weight: 600;">$${subtotalARS.toLocaleString('es-AR', {minimumFractionDigits: 2})}</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #e2e8f0;">
+                <span style="color: #64748b; font-size: 16px;">Impuestos (21%):</span>
+                <span style="color: #374151; font-size: 16px; font-weight: 600;">$${taxesARS.toLocaleString('es-AR', {minimumFractionDigits: 2})}</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-top: 2px solid #2563eb; margin-top: 8px;">
+                <span style="color: #2563eb; font-size: 18px; font-weight: 600;">Total:</span>
+                <span style="color: #2563eb; font-size: 20px; font-weight: bold;">$${totalARS.toLocaleString('es-AR', {minimumFractionDigits: 2})}</span>
+              </div>
+            </div>
+          </div>
+
+          <div style="background-color: ${config.bgColor}; border: 1px solid ${config.borderColor}; padding: 15px; border-radius: 8px; margin: 20px 0;">
+            <p style="color: ${config.color}; font-size: 14px; margin: 0; text-align: center;">
+              <strong>Nuevo Estado: ${statusText}</strong><br>
+              ${status === 3 ? 'Tu orden ha sido cancelada' : 'Tu orden ha sido actualizada'}
+            </p>
+          </div>
+
+          <div style="background-color: #f0f9ff; border: 1px solid #0ea5e9; padding: 15px; border-radius: 8px; margin: 20px 0;">
+            <p style="color: #0369a1; font-size: 14px; margin: 0; text-align: center;">
+              <strong>💡 Información:</strong> Los precios están convertidos a pesos argentinos usando la tasa de cambio actual (1 USD = $${exchangeRates.ARS.toLocaleString('es-AR')} ARS)
+            </p>
+          </div>
+
+          <p style="text-align: center; color: #6b7280; margin-top: 30px; font-size: 16px; line-height: 1.6;">
+            Puedes ver más detalles de tu orden en tu perfil de usuario.
+          </p>
+        </div>
+      </div>
     `,
   };
 
