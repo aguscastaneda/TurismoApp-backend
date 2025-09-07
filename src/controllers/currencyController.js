@@ -229,4 +229,4 @@ module.exports = {
   getExchangeRates,
   convertCurrency,
   getAvailableCurrencies
-}; 
+};
