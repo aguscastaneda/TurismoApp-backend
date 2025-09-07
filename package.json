@@ -9,23 +9,30 @@
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:seed": "node prisma/seed.js",
-    "build": "prisma generate && npm start"
+    "build": "prisma generate && npm start",
+    "worker:email": "node src/workers/emailWorker.js",
+    "worker:webhook": "node src/workers/webhookWorker.js",
+    "worker:stock": "node src/workers/stockWorker.js",
+    "worker:all": "concurrently \"npm run worker:email\" \"npm run worker:webhook\" \"npm run worker:stock\""
   },
   "dependencies": {
-    "@prisma/client": "^6.9.0",
+    "@prisma/client": "^6.15.0",
+    "amqplib": "^0.10.9",
     "axios": "^1.10.0",
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.21.2",
     "firebase-admin": "^13.4.0",
+    "ioredis": "^5.7.0",
     "jsonwebtoken": "^9.0.2",
     "mercadopago": "^2.7.0",
-    "nodemailer": "^7.0.3"
+    "nodemailer": "^7.0.4"
   },
   "devDependencies": {
+    "concurrently": "^8.2.2",
     "nodemon": "^3.1.0",
-    "prisma": "^6.9.0"
+    "prisma": "^6.15.0"
   },
   "prisma": {
     "seed": "node prisma/seed.js"

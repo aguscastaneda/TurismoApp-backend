@@ -6,8 +6,28 @@ const cartRoutes = require("./routes/cartRoutes");
 const orderRoutes = require("./routes/orderRoutes");
 const currencyRoutes = require("./routes/currencyRoutes");
 const helpRoutes = require("./routes/helpRoutes");
+const { connectRabbitMQ } = require("./config/rabbitmq");
 
 const app = express();
+
+// Inicializar conexiones
+async function initializeConnections() {
+  try {
+    console.log('🔄 Inicializando conexiones...');
+    
+    // Conectar RabbitMQ
+    await connectRabbitMQ();
+    
+    console.log('✅ Todas las conexiones inicializadas correctamente');
+  } catch (error) {
+    console.error('❌ Error inicializando conexiones:', error);
+    // No salir del proceso, continuar sin las conexiones
+    console.log('⚠️ Continuando sin RabbitMQ (modo degradado)');
+  }
+}
+
+// Inicializar conexiones al arrancar
+initializeConnections();
 
 // CORS configuration
 const corsOptions = {
