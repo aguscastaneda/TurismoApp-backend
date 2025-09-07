@@ -29,6 +29,7 @@ const getExchangeRates = async (req, res) => {
   try {
     console.log('Currency endpoint called');
     
+<<<<<<< HEAD
     // Verificar cache Redis primero
     const cacheKey = CACHE_KEYS.CURRENCY_RATES;
     const cached = await getCache(cacheKey);
@@ -37,6 +38,8 @@ const getExchangeRates = async (req, res) => {
       return res.json({ ...cached, cached: true });
     }
     
+=======
+>>>>>>> 3041717f4d41692ba8121d8e57b07eb59286eb89
     // Usar tasas simuladas temporalmente
     const mockRates = {
       EUR: 1.0000,
@@ -53,15 +56,32 @@ const getExchangeRates = async (req, res) => {
       MXN: 22.1275,
       PEN: 4.1276,
       UYU: 46.8593
+<<<<<<< HEAD
     };
 
     const payload = {
+=======
+    };
+
+    // Actualizar cache
+    exchangeRatesCache = {
+      base: 'EUR',
+      rates: mockRates,
+      timestamp: Math.floor(Date.now() / 1000)
+    };
+    lastCacheUpdate = Date.now();
+
+    console.log('Returning mock rates');
+    
+    res.json({
+>>>>>>> 3041717f4d41692ba8121d8e57b07eb59286eb89
       success: true,
       base: 'EUR',
       rates: mockRates,
       timestamp: Math.floor(Date.now() / 1000),
       cached: false,
       message: "Tasas simuladas - API temporal"
+<<<<<<< HEAD
     };
 
     // Actualizar cache Redis y memoria
@@ -72,6 +92,9 @@ const getExchangeRates = async (req, res) => {
     console.log('Returning mock rates');
     
     res.json(payload);
+=======
+    });
+>>>>>>> 3041717f4d41692ba8121d8e57b07eb59286eb89
   } catch (error) {
     console.error('Error in currency controller:', error);
     res.status(500).json({

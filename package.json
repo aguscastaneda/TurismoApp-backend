@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 {
   "name": "turismo-app-backend",
   "version": "1.0.0",
@@ -38,3 +39,38 @@
     "seed": "node prisma/seed.js"
   }
 }
+=======
+{
+  "name": "turismo-app-backend",
+  "version": "1.0.0",
+  "description": "Backend para la aplicación de turismo",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev",
+    "prisma:seed": "node prisma/seed.js",
+    "build": "prisma generate && npm start"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.9.0",
+    "axios": "^1.10.0",
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.2",
+    "firebase-admin": "^13.4.0",
+    "jsonwebtoken": "^9.0.2",
+    "mercadopago": "^2.7.0",
+    "nodemailer": "^7.0.3"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.0",
+    "prisma": "^6.9.0"
+  },
+  "prisma": {
+    "seed": "node prisma/seed.js"
+  }
+}
+>>>>>>> 3041717f4d41692ba8121d8e57b07eb59286eb89
