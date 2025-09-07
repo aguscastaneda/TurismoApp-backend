@@ -1,10 +1,7 @@
 const { PrismaClient } = require("@prisma/client");
 const { MercadoPagoConfig, Preference, Payment } = require("mercadopago");
 const { sendOrderConfirmationEmail, sendOrderStatusUpdateEmail, sendOrderCreatedEmail } = require("../config/email");
-<<<<<<< HEAD
 const { publishToQueue } = require("../utils/queue");
-=======
->>>>>>> 3041717f4d41692ba8121d8e57b07eb59286eb89
 const axios = require('axios');
 
 const prisma = new PrismaClient();
@@ -251,7 +248,6 @@ const handleWebhook = async (req, res) => {
     const { data, type } = req.body;
 
     if (type === "payment") {
-<<<<<<< HEAD
       console.log("Encolando webhook para procesamiento asíncrono");
       
       // Encolar webhook para procesamiento asíncrono
@@ -265,95 +261,6 @@ const handleWebhook = async (req, res) => {
         console.error("Error encolando webhook:", queueError);
         // Fallback: procesar síncronamente si falla la cola
         await processWebhookSync(data, type);
-=======
-      console.log("Procesando pago con ID:", data.id);
-
-      const paymentData = await new Payment(client).get({ paymentId: data.id });
-      console.log("Datos del pago:", JSON.stringify(paymentData, null, 2));
-
-      const orderId = paymentData.external_reference;
-      console.log("ID de orden encontrado:", orderId);
-
-      if (paymentData.status === "approved") {
-        console.log("Pago aprobado, actualizando orden a COMPLETED");
-
-        const order = await prisma.orders.update({
-          where: { id: parseInt(orderId) },
-          data: { status: 2 }, // COMPLETED
-          include: {
-            user: true,
-            items: {
-              include: {
-                product: true,
-              },
-            },
-          },
-        });
-
-        console.log("Orden actualizada:", order);
-
-        // Enviar email de confirmación
-        try {
-          await sendOrderConfirmationEmail(order.user.email, order);
-          console.log(`Email de confirmación enviado a ${order.user.email}`);
-        } catch (emailError) {
-          console.error("Error enviando email de confirmación:", emailError);
-        }
-
-        // Actualizar stock de productos
-        for (const item of order.items) {
-          await prisma.product.update({
-            where: { id: item.productId },
-            data: { stock: { decrement: item.quantity } },
-          });
-        }
-
-        console.log("Stock de productos actualizado");
-      } else if (paymentData.status === "pending") {
-        console.log("Pago pendiente, actualizando orden a PENDING");
-        const pendingOrder = await prisma.orders.update({
-          where: { id: parseInt(orderId) },
-          data: { status: 0 }, // PENDING
-          include: {
-            user: true,
-            items: {
-              include: {
-                product: true,
-              },
-            },
-          },
-        });
-        
-        // Enviar email de actualización
-        try {
-          await sendOrderStatusUpdateEmail(pendingOrder.user.email, pendingOrder, 0);
-          console.log(`Email de actualización enviado a ${pendingOrder.user.email}`);
-        } catch (emailError) {
-          console.error("Error enviando email de actualización:", emailError);
-        }
-      } else if (paymentData.status === "rejected" || paymentData.status === "cancelled") {
-        console.log("Pago rechazado/cancelado, actualizando orden a CANCELLED");
-        const cancelledOrder = await prisma.orders.update({
-          where: { id: parseInt(orderId) },
-          data: { status: 3 }, // CANCELLED
-          include: {
-            user: true,
-            items: {
-              include: {
-                product: true,
-              },
-            },
-          },
-        });
-        
-        // Enviar email de cancelación
-        try {
-          await sendOrderStatusUpdateEmail(cancelledOrder.user.email, cancelledOrder, 3);
-          console.log(`Email de cancelación enviado a ${cancelledOrder.user.email}`);
-        } catch (emailError) {
-          console.error("Error enviando email de cancelación:", emailError);
-        }
->>>>>>> 3041717f4d41692ba8121d8e57b07eb59286eb89
       }
     }
 
@@ -572,16 +479,11 @@ const updateOrderStatus = async (req, res) => {
 
     // Encolar email de actualización de estado
     try {
-<<<<<<< HEAD
       await publishToQueue('email_exchange', 'email', {
         type: 'orderStatusUpdate',
         data: { email: order.user.email, order, status: parseInt(status) }
       });
       console.log(`Email de actualización de estado encolado para ${order.user.email}`);
-=======
-      await sendOrderStatusUpdateEmail(order.user.email, order, parseInt(status));
-      console.log(`Email de actualización de estado enviado a ${order.user.email}`);
->>>>>>> 3041717f4d41692ba8121d8e57b07eb59286eb89
     } catch (emailError) {
       console.error("Error encolando email de actualización:", emailError);
     }
@@ -646,16 +548,11 @@ const cancelOrder = async (req, res) => {
 
     // Encolar email de cancelación
     try {
-<<<<<<< HEAD
       await publishToQueue('email_exchange', 'email', {
         type: 'orderStatusUpdate',
         data: { email: cancelledOrder.user.email, order: cancelledOrder, status: 3 }
       });
       console.log(`Email de cancelación encolado para ${cancelledOrder.user.email}`);
-=======
-      await sendOrderStatusUpdateEmail(cancelledOrder.user.email, cancelledOrder, 3);
-      console.log(`Email de cancelación enviado a ${cancelledOrder.user.email}`);
->>>>>>> 3041717f4d41692ba8121d8e57b07eb59286eb89
     } catch (emailError) {
       console.error("Error encolando email de cancelación:", emailError);
     }
