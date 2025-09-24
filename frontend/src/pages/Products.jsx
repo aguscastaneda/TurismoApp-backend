@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import PackageCard from '../components/PackageCard';
+import ProductCard from '../components/ProductCard';
 import { useAuth } from '../context/AuthContext';
 import { useCurrency } from "../context/CurrencyContext";
 import { handleImageError } from "../utils/imageUtils";
@@ -242,10 +243,10 @@ const Products = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen gradient-bg py-12 px-4 sm:px-6 lg:px-8">
+      <div className="min-h-screen gradient-bg py-8 sm:py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
-          <div className="flex justify-center items-center h-64">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+          <div className="flex justify-center items-center h-48 sm:h-64">
+            <div className="animate-spin rounded-full h-8 w-8 sm:h-12 sm:w-12 border-b-2 border-blue-600"></div>
           </div>
         </div>
       </div>
@@ -255,9 +256,9 @@ const Products = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen gradient-bg py-12 px-4 sm:px-6 lg:px-8">
+      <div className="min-h-screen gradient-bg py-8 sm:py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
-          <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-red-700">
+          <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-red-700 text-sm sm:text-base">
             {error}
           </div>
         </div>
@@ -294,10 +295,10 @@ const Products = () => {
 
 
   return (
-    <div className="min-h-screen gradient-bg py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen gradient-bg py-8 sm:py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
         {/* Hero Section con Carrusel de Fondo */}
-        <div className="relative h-96 mb-12 rounded-3xl overflow-hidden shadow-2xl">
+        <div className="relative h-64 sm:h-80 md:h-96 mb-8 sm:mb-12 rounded-2xl sm:rounded-3xl overflow-hidden shadow-2xl">
           {/* Carrusel de imágenes de fondo */}
           <div className="absolute inset-0 cursor-pointer" onClick={handleBackgroundClick}>
             {backgroundImages.map((image, index) => (
@@ -323,7 +324,7 @@ const Products = () => {
           {/* Contenido de la seccion principal */}
           <div className="relative z-10 flex flex-col justify-center items-center h-full text-center px-4">
             <h1
-              className={`text-6xl font-bold text-white mb-6 drop-shadow-2xl transition-all duration-200 ${
+              className={`text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-4 sm:mb-6 drop-shadow-2xl transition-all duration-200 ${
                 isTransitioning
                   ? 'opacity-0 transform translate-y-2'
                   : 'opacity-100 transform translate-y-0'
@@ -331,27 +332,27 @@ const Products = () => {
             >
               {titles[languageIndex]}
             </h1>
-            <p className="text-xl text-white/90 max-w-3xl mx-auto leading-relaxed drop-shadow-lg">
+            <p className="text-sm sm:text-base md:text-lg lg:text-xl text-white/90 max-w-2xl sm:max-w-3xl mx-auto leading-relaxed drop-shadow-lg px-2">
               Encuentra el viaje perfecto con nuestras opciones
               <span className="text-emerald-300 font-semibold"> low cost</span>,
               <span className="text-amber-300 font-semibold"> medium cost</span> y
               <span className="text-purple-300 font-semibold"> high cost</span>
             </p>
-            <div className="mt-8 flex justify-center">
-              <div className="glass rounded-xl px-6 py-3 shadow-xl">
-                <span className="text-gray-800 font-medium">Más de 10,000 viajeros felices</span>
+            <div className="mt-4 sm:mt-6 md:mt-8 flex justify-center">
+              <div className="glass rounded-xl px-4 sm:px-6 py-2 sm:py-3 shadow-xl">
+                <span className="text-gray-800 font-medium text-sm sm:text-base">Más de 10,000 viajeros felices</span>
               </div>
             </div>
           </div>
 
 
           {/* Indicadores del carrusel */}
-          <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex space-x-2 z-20">
+          <div className="absolute bottom-2 sm:bottom-4 left-1/2 transform -translate-x-1/2 flex space-x-1 sm:space-x-2 z-20">
             {backgroundImages.map((_, index) => (
               <button
                 key={index}
                 onClick={() => handleDotClick(index)}
-                className={`w-3 h-3 rounded-full transition-all duration-300 ${
+                className={`w-2 h-2 sm:w-3 sm:h-3 rounded-full transition-all duration-300 ${
                   index === backgroundSlide
                     ? 'bg-white scale-125'
                     : 'bg-white/50 hover:bg-white/75'
@@ -364,17 +365,17 @@ const Products = () => {
           {/* Botones de navegación */}
           <button
             onClick={handlePreviousSlide}
-            className="absolute left-4 top-1/2 transform -translate-y-1/2 glass hover:bg-white/40 rounded-full p-3 transition-all duration-300 z-20"
+            className="absolute left-2 sm:left-4 top-1/2 transform -translate-y-1/2 glass hover:bg-white/40 rounded-full p-2 sm:p-3 transition-all duration-300 z-20"
           >
-            <svg className="w-6 h-6 text-gray-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-4 h-4 sm:w-6 sm:h-6 text-gray-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
           </button>
           <button
             onClick={handleNextSlide}
-            className="absolute right-4 top-1/2 transform -translate-y-1/2 glass hover:bg-white/40 rounded-full p-3 transition-all duration-300 z-20"
+            className="absolute right-2 sm:right-4 top-1/2 transform -translate-y-1/2 glass hover:bg-white/40 rounded-full p-2 sm:p-3 transition-all duration-300 z-20"
           >
-            <svg className="w-6 h-6 text-gray-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-4 h-4 sm:w-6 sm:h-6 text-gray-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
           </button>
@@ -382,13 +383,13 @@ const Products = () => {
 
 
         {/* Tabs */}
-        <div className="card p-1 mb-8">
-          <div className="grid grid-cols-3 gap-1">
+        <div className="card p-1 mb-6 sm:mb-8">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-1">
             {tabs.map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`px-4 py-3 rounded-xl font-medium transition-all duration-200 ${
+                className={`px-3 sm:px-4 py-2 sm:py-3 rounded-xl font-medium transition-all duration-200 text-sm sm:text-base ${
                   activeTab === tab.id
                     ? getTabColor(tab.id)
                     : "text-gray-600 hover:text-gray-800 hover:bg-gray-50"
@@ -404,17 +405,17 @@ const Products = () => {
         {/* Tab Content */}
         {tabs.map((tab) => (
           <div key={tab.id} className={activeTab === tab.id ? "block" : "hidden"}>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
               {tab.packages.map((pkg, index) => (
                 <div key={pkg.id} className="animate-fade-in" style={{ animationDelay: `${index * 0.1}s` }}>
-                  <PackageCard package={pkg} />
+                  <ProductCard product={{...pkg, origin: 'Buenos Aires'}} />
                 </div>
               ))}
             </div>
             {tab.packages.length === 0 && (
-              <div className="text-center py-16">
-                <div className="card p-8">
-                  <p className="text-gray-500 text-lg">No hay paquetes {tab.label.toLowerCase()} disponibles</p>
+              <div className="text-center py-12 sm:py-16">
+                <div className="card p-6 sm:p-8">
+                  <p className="text-gray-500 text-base sm:text-lg">No hay paquetes {tab.label.toLowerCase()} disponibles</p>
                 </div>
               </div>
             )}

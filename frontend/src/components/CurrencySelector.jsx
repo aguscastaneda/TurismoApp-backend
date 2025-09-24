@@ -32,19 +32,19 @@ const CurrencySelector = () => {
   return (
     <div className="relative">
       {/* Selector de moneda */}
-      <div className="flex items-center space-x-2">
+      <div className="flex items-center space-x-1 sm:space-x-2">
         <button
           onClick={() => setIsOpen(!isOpen)}
-          className="flex items-center space-x-2 px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="flex items-center space-x-1 sm:space-x-2 px-2 sm:px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
-          <span className="text-lg">
+          <span className="text-base sm:text-lg">
             {popularCurrencies.find(c => c.code === selectedCurrency)?.symbol || selectedCurrency}
           </span>
           <span className="hidden sm:inline">
             {selectedCurrency}
           </span>
           <svg 
-            className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} 
+            className={`w-3 h-3 sm:w-4 sm:h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} 
             fill="none" 
             stroke="currentColor" 
             viewBox="0 0 24 24"
@@ -57,10 +57,10 @@ const CurrencySelector = () => {
         <button
           onClick={fetchExchangeRates}
           disabled={loading}
-          className="p-2 text-gray-500 hover:text-gray-700 disabled:opacity-50"
+          className="p-1.5 sm:p-2 text-gray-500 hover:text-gray-700 disabled:opacity-50"
           title="Actualizar tasas de cambio"
         >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
           </svg>
         </button>
@@ -68,7 +68,7 @@ const CurrencySelector = () => {
 
       {/* Dropdown de monedas */}
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-64 bg-white border border-gray-300 rounded-md shadow-lg z-50">
+        <div className="absolute right-0 mt-2 w-64 sm:w-72 bg-white border border-gray-300 rounded-md shadow-lg z-50">
           <div className="p-3 border-b border-gray-200">
             <h3 className="text-sm font-medium text-gray-900">Seleccionar Moneda</h3>
             {lastUpdate && (
@@ -83,15 +83,15 @@ const CurrencySelector = () => {
               <button
                 key={currency.code}
                 onClick={() => handleCurrencyChange(currency.code)}
-                className={`w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center justify-between ${
+                className={`w-full px-3 sm:px-4 py-2 text-left hover:bg-gray-50 flex items-center justify-between ${
                   selectedCurrency === currency.code ? 'bg-blue-50 text-blue-700' : 'text-gray-700'
                 }`}
               >
-                <div className="flex items-center space-x-3">
-                  <span className="text-lg">{currency.symbol}</span>
+                <div className="flex items-center space-x-2 sm:space-x-3">
+                  <span className="text-base sm:text-lg">{currency.symbol}</span>
                   <div>
-                    <div className="font-medium">{currency.code}</div>
-                    <div className="text-xs text-gray-500">{currency.name}</div>
+                    <div className="font-medium text-sm sm:text-base">{currency.code}</div>
+                    <div className="text-xs text-gray-500 hidden sm:block">{currency.name}</div>
                   </div>
                 </div>
                 {selectedCurrency === currency.code && (

@@ -8,6 +8,10 @@ const CACHE_KEYS = {
 };
 
 async function getCache(key) {
+  if (!redis) {
+    return null; // Sin Redis, no hay cache
+  }
+  
   try {
     const value = await redis.get(key);
     return value ? JSON.parse(value) : null;
@@ -18,6 +22,10 @@ async function getCache(key) {
 }
 
 async function setCache(key, value, ttlSeconds = 300) {
+  if (!redis) {
+    return; // Sin Redis, no guardar cache
+  }
+  
   try {
     const serialized = JSON.stringify(value);
     if (ttlSeconds > 0) {
@@ -31,6 +39,10 @@ async function setCache(key, value, ttlSeconds = 300) {
 }
 
 async function delCache(pattern) {
+  if (!redis) {
+    return; // Sin Redis, no eliminar cache
+  }
+  
   try {
     if (pattern.includes('*')) {
       const keys = await redis.keys(pattern);

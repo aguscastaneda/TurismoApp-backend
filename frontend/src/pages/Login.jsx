@@ -8,9 +8,7 @@ import img2 from "../assets/img4.jpg";
 import img3 from "../assets/img3.jpg";
 import img4 from "../assets/img2.jpg";
 
-
 const images = [img1, img2, img3, img4];
-
 
 const Login = () => {
   const [formData, setFormData] = useState({ email: "", password: "" });
@@ -21,7 +19,6 @@ const Login = () => {
   const [fade, setFade] = useState(false);
   const { login, loginWithGoogle } = useAuth();
   const navigate = useNavigate();
-
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -34,11 +31,9 @@ const Login = () => {
     return () => clearInterval(interval);
   }, []);
 
-
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
-
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -55,7 +50,6 @@ const Login = () => {
     }
   };
 
-
   const handleGoogleSuccess = async (googleData) => {
     try {
       const success = await loginWithGoogle(googleData);
@@ -65,9 +59,7 @@ const Login = () => {
     }
   };
 
-
   const handleGoogleFailure = () => setError("Error al autenticar con Google");
-
 
   return (
     <div className="relative w-screen h-screen overflow-hidden">
@@ -91,34 +83,31 @@ const Login = () => {
         />
       </div>
 
-
       {/* Overlay con desenfoque */}
       <div className="absolute inset-0 bg-primary-900/40 backdrop-blur-sm z-10" />
 
-
       {/* Formulario */}
-      <div className="relative z-20 flex items-center justify-center h-full px-4">
-        <div className="auth-form p-6 rounded-2xl w-full max-w-md animate-fade-in">
-          <div className="text-center mb-4">
+      <div className="relative z-20 flex items-center justify-center h-full px-4 sm:px-6">
+        <div className="auth-form p-4 sm:p-6 rounded-2xl w-full max-w-sm sm:max-w-md animate-fade-in">
+          <div className="text-center mb-4 sm:mb-6">
             <img
               src={logoPestana}
               alt="Logo"
-              className="w-16 h-16 mx-auto rounded-full shadow-md mb-2 object-cover"
+              className="w-12 h-12 sm:w-16 sm:h-16 mx-auto rounded-full shadow-md mb-2 sm:mb-3 object-cover"
             />
-            <h1 className="text-2xl font-bold text-primary-700">¡Bienvenido de vuelta!</h1>
-            <p className="text-sm text-muted-foreground mt-1">Inicia sesión en tu cuenta</p>
+            <h1 className="text-xl sm:text-2xl font-bold text-primary-700">¡Bienvenido de vuelta!</h1>
+            <p className="text-xs sm:text-sm text-muted-foreground mt-1">Inicia sesión en tu cuenta</p>
           </div>
 
-
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
             {/* Email */}
             <div>
-              <label htmlFor="email" className="block text-sm font-semibold text-foreground mb-1">
+              <label htmlFor="email" className="block text-xs sm:text-sm font-semibold text-foreground mb-1">
                 Correo Electrónico
               </label>
               <div className="relative">
                 <svg
-                  className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-primary-500"
+                  className="absolute left-3 top-1/2 transform -translate-y-1/2 w-3 h-3 sm:w-5 sm:h-5 text-primary-500"
                   fill="currentColor"
                   viewBox="0 0 20 20"
                 >
@@ -131,22 +120,21 @@ const Login = () => {
                   id="email"
                   value={formData.email}
                   onChange={handleChange}
-                  className="input-field pl-11"
+                  className="input-field pl-12 sm:pl-14 text-sm sm:text-base"
                   placeholder="tucorreo@ejemplo.com"
                   required
                 />
               </div>
             </div>
 
-
             {/* Contraseña */}
             <div>
-              <label htmlFor="password" className="block text-sm font-semibold text-foreground mb-1">
+              <label htmlFor="password" className="block text-xs sm:text-sm font-semibold text-foreground mb-1">
                 Contraseña
               </label>
               <div className="relative">
                 <svg
-                  className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-primary-500"
+                  className="absolute left-3 top-1/2 transform -translate-y-1/2 w-3 h-3 sm:w-5 sm:h-5 text-primary-500"
                   fill="currentColor"
                   viewBox="0 0 20 20"
                 >
@@ -162,47 +150,42 @@ const Login = () => {
                   id="password"
                   value={formData.password}
                   onChange={handleChange}
-                  className="input-field pl-11 pr-12"
+                  className="input-field pl-12 sm:pl-14 pr-20 sm:pr-24 text-sm sm:text-base"
                   placeholder="••••••••"
                   required
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-primary-500 text-sm"
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-primary-500 text-xs sm:text-sm"
                 >
                   {showPassword ? "Ocultar" : "Mostrar"}
                 </button>
               </div>
             </div>
 
-
             {/* Error */}
             {error && (
-              <div className="text-red-500 text-sm text-center bg-red-50 p-3 rounded-lg shadow">
+              <div className="text-red-500 text-xs sm:text-sm text-center bg-red-50 p-2 sm:p-3 rounded-lg shadow">
                 {error}
               </div>
             )}
 
-
             {/* Botón */}
-            <button type="submit" disabled={loading} className="btn-primary w-full">
+            <button type="submit" disabled={loading} className="btn-primary w-full text-sm sm:text-base py-2 sm:py-3">
               {loading ? "Iniciando sesión..." : "Iniciar Sesión"}
             </button>
 
-
             {/* Divider */}
-            <div className="flex items-center gap-3 my-3">
+            <div className="flex items-center gap-2 sm:gap-3 my-3">
               <hr className="flex-grow border-blue-200" />
-              <span className="text-sm text-muted-foreground">o continúa con</span>
+              <span className="text-xs sm:text-sm text-muted-foreground">o continúa con</span>
               <hr className="flex-grow border-blue-200" />
             </div>
 
-
             <SimpleGoogleLogin onSuccess={handleGoogleSuccess} onFailure={handleGoogleFailure} />
 
-
-            <div className="text-center text-sm text-muted-foreground mt-3">
+            <div className="text-center text-xs sm:text-sm text-muted-foreground mt-3">
               ¿No tenés cuenta?{" "}
               <Link to="/register" className="text-primary-600 hover:underline font-medium">
                 Registrate aquí
@@ -214,6 +197,5 @@ const Login = () => {
     </div>
   );
 };
-
 
 export default Login;

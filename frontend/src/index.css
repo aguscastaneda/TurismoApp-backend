@@ -71,23 +71,23 @@
 
 @layer components {
   .btn-primary {
-    @apply px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold rounded-xl transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5;
+    @apply px-4 sm:px-6 py-2 sm:py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold rounded-xl transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 text-sm sm:text-base;
   }
 
   .btn-secondary {
-    @apply px-6 py-3 border-2 border-blue-600 text-blue-600 bg-white hover:bg-blue-50 font-semibold rounded-xl transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 shadow-md hover:shadow-lg transform hover:-translate-y-0.5;
+    @apply px-4 sm:px-6 py-2 sm:py-3 border-2 border-blue-600 text-blue-600 bg-white hover:bg-blue-50 font-semibold rounded-xl transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 shadow-md hover:shadow-lg transform hover:-translate-y-0.5 text-sm sm:text-base;
   }
 
   .btn-outline {
-    @apply px-6 py-3 border-2 border-gray-300 text-gray-700 bg-white hover:bg-gray-50 hover:border-gray-400 font-semibold rounded-xl transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 shadow-md hover:shadow-lg transform hover:-translate-y-0.5;
+    @apply px-4 sm:px-6 py-2 sm:py-3 border-2 border-gray-300 text-gray-700 bg-white hover:bg-gray-50 hover:border-gray-400 font-semibold rounded-xl transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 shadow-md hover:shadow-lg transform hover:-translate-y-0.5 text-sm sm:text-base;
   }
 
   .btn-danger {
-    @apply px-6 py-3 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white font-semibold rounded-xl transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5;
+    @apply px-4 sm:px-6 py-2 sm:py-3 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white font-semibold rounded-xl transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 text-sm sm:text-base;
   }
 
   .input-field {
-    @apply w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300 bg-white shadow-sm hover:shadow-md;
+    @apply w-full px-3 sm:px-4 py-2 sm:py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300 bg-white shadow-sm hover:shadow-md text-sm sm:text-base;
   }
 
   .card {
@@ -222,7 +222,7 @@
 
 /* Custom scrollbar */
 ::-webkit-scrollbar {
-  width: 8px;
+  width: 6px;
 }
 
 ::-webkit-scrollbar-track {
@@ -231,9 +231,35 @@
 
 ::-webkit-scrollbar-thumb {
   background: #cbd5e1;
-  border-radius: 4px;
+  border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
+}
+
+/* Responsive improvements */
+@media (max-width: 640px) {
+  .btn-primary,
+  .btn-secondary,
+  .btn-outline,
+  .btn-danger {
+    @apply px-3 py-2 text-sm;
+  }
+  
+  .input-field {
+    @apply py-2 text-sm;
+  }
+  
+  .card {
+    @apply rounded-xl;
+  }
+  
+  .package-card {
+    @apply rounded-xl;
+  }
+  
+  .package-card::before {
+    border-radius: 0.75rem;
+  }
 }
