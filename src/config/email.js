@@ -1,47 +1,43 @@
 require("dotenv").config(); // Carga las variables del archivo .env
-const nodemailer = require("nodemailer");
+const SibApiV3Sdk = require('sib-api-v3-sdk');
 
 // Validar variables críticas
-if (!process.env.EMAIL_USER || !process.env.EMAIL_PASSWORD) {
-  console.error("❌ ERROR: Faltan EMAIL_USER o EMAIL_PASSWORD en el archivo .env");
+if (!process.env.BREVO_API_KEY) {
+  console.error("❌ ERROR: Falta BREVO_API_KEY en el archivo .env");
   process.exit(1);
 }
 
-// Configurar transporter con Gmail
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASSWORD,
-  },
-  tls: {
-    rejectUnauthorized: false, // Permitir certificados autofirmados
-  },
-  secure: false,
-  port: 587,
-  requireTLS: true,
-  debug: true,
-  logger: true
-});
+// Configurar cliente de Brevo API
+const defaultClient = SibApiV3Sdk.ApiClient.instance;
+const apiKey = defaultClient.authentications['api-key'];
+apiKey.apiKey = process.env.BREVO_API_KEY;
+
+const apiInstance = new SibApiV3Sdk.TransactionalEmailsApi();
+
+// Configuración del remitente
+const sender = {
+  email: process.env.BREVO_SENDER_EMAIL || "info@turismo21.site",
+  name: process.env.BREVO_SENDER_NAME || "TurismoApp"
+};
 
 // === FUNCIÓN: Correo de verificación ===
 const sendVerificationEmail = async (email, code) => {
-  const mailOptions = {
-    from: process.env.EMAIL_USER,
-    to: email,
-    subject: "Verifica tu correo electrónico",
-    html: `
-      <div style="padding: 20px; font-family: sans-serif;">
-        <h2 style="color: #2563eb;">Verificación de Email</h2>
-        <p>Gracias por registrarte. Tu código de verificación es:</p>
-        <div style="font-size: 28px; font-weight: bold; color: #2563eb;">${code}</div>
-        <p>Este código expirará en 10 minutos.</p>
-      </div>
-    `,
-  };
+  const sendSmtpEmail = new SibApiV3Sdk.SendSmtpEmail();
+  
+  sendSmtpEmail.sender = sender;
+  sendSmtpEmail.to = [{ email: email }];
+  sendSmtpEmail.subject = "Verifica tu correo electrónico";
+  sendSmtpEmail.htmlContent = `
+    <div style="padding: 20px; font-family: sans-serif;">
+      <h2 style="color: #2563eb;">Verificación de Email</h2>
+      <p>Gracias por registrarte. Tu código de verificación es:</p>
+      <div style="font-size: 28px; font-weight: bold; color: #2563eb;">${code}</div>
+      <p>Este código expirará en 10 minutos.</p>
+    </div>
+  `;
 
   try {
-    await transporter.sendMail(mailOptions);
+    const data = await apiInstance.sendTransacEmail(sendSmtpEmail);
     return true;
   } catch (error) {
     console.error("❌ Error al enviar correo de verificación:", error);
@@ -95,32 +91,32 @@ const sendPurchaseEmail = async (email, orderDetails) => {
     `;
   }).join('');
 
-  const mailOptions = {
-    from: process.env.EMAIL_USER,
-    to: email,
-    subject: "¡Compra exitosa! - TurismoApp",
-    html: `
-      <h2 style="color:#2563eb;">Compra Confirmada</h2>
-      <p>Gracias por tu compra. Aquí están los detalles:</p>
-      <p><strong>Número de orden:</strong> #${orderDetails.id}</p>
-      <p><strong>Fecha:</strong> ${new Date(orderDetails.createdAt || orderDetails.date).toLocaleString('es-AR')}</p>
-      <table border="1" cellpadding="5" cellspacing="0">
-        <thead>
-          <tr><th>Producto</th><th>Cantidad</th><th>Precio Unit.</th><th>Subtotal</th></tr>
-        </thead>
-        <tbody>
-          ${itemsTable}
-        </tbody>
-      </table>
-      <p><strong>Subtotal:</strong> $${subtotalARS.toFixed(2)}</p>
-      <p><strong>Impuestos:</strong> $${taxesARS.toFixed(2)}</p>
-      <p><strong>Total:</strong> $${totalARS.toFixed(2)}</p>
-      <p><em>Tasa de cambio utilizada: 1 USD = $${exchangeRates.ARS.toFixed(4)} ARS</em></p>
-    `,
-  };
+  const sendSmtpEmail = new SibApiV3Sdk.SendSmtpEmail();
+  
+  sendSmtpEmail.sender = sender;
+  sendSmtpEmail.to = [{ email: email }];
+  sendSmtpEmail.subject = "¡Compra exitosa! - TurismoApp";
+  sendSmtpEmail.htmlContent = `
+    <h2 style="color:#2563eb;">Compra Confirmada</h2>
+    <p>Gracias por tu compra. Aquí están los detalles:</p>
+    <p><strong>Número de orden:</strong> #${orderDetails.id}</p>
+    <p><strong>Fecha:</strong> ${new Date(orderDetails.createdAt || orderDetails.date).toLocaleString('es-AR')}</p>
+    <table border="1" cellpadding="5" cellspacing="0">
+      <thead>
+        <tr><th>Producto</th><th>Cantidad</th><th>Precio Unit.</th><th>Subtotal</th></tr>
+      </thead>
+      <tbody>
+        ${itemsTable}
+      </tbody>
+    </table>
+    <p><strong>Subtotal:</strong> $${subtotalARS.toFixed(2)}</p>
+    <p><strong>Impuestos:</strong> $${taxesARS.toFixed(2)}</p>
+    <p><strong>Total:</strong> $${totalARS.toFixed(2)}</p>
+    <p><em>Tasa de cambio utilizada: 1 USD = $${exchangeRates.ARS.toFixed(4)} ARS</em></p>
+  `;
 
   try {
-    await transporter.sendMail(mailOptions);
+    await apiInstance.sendTransacEmail(sendSmtpEmail);
     console.log(`✅ Email de compra enviado a ${email}`);
     return true;
   } catch (error) {
@@ -174,95 +170,95 @@ const sendOrderCreatedEmail = async (email, orderDetails) => {
     `;
   }).join('');
 
-  const mailOptions = {
-    from: process.env.EMAIL_USER,
-    to: email,
-    subject: "Orden creada - TurismoApp",
-    html: `
-      <div style="max-width: 600px; margin: 0 auto; padding: 20px; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f8f9fa;">
-        <div style="background-color: white; padding: 40px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08);">
-          <h2 style="color: #2563eb; text-align: center; margin-bottom: 10px; font-size: 28px; font-weight: 300;">¡Orden Creada!</h2>
-          <p style="text-align: center; color: #6b7280; margin-bottom: 40px; font-size: 16px;">Tu orden está pendiente de pago</p>
-          <div style="background-color: #fef3c7; border: 2px solid #f59e0b; padding: 25px; border-radius: 8px; margin: 30px 0; text-align: center;">
-            <div style="font-size: 36px; margin-bottom: 15px;">⚠️</div>
-            <h3 style="color: #d97706; margin: 0; font-size: 20px; font-weight: 600;">Pendiente de Pago</h3>
-            <p style="color: #92400e; margin: 10px 0 0 0; font-size: 16px;">
-              Completa el pago para confirmar tu orden
-            </p>
-          </div>
-          <div style="background-color: #f3f4f6; padding: 25px; border-radius: 8px; margin-bottom: 30px;">
-            <h3 style="color: #374151; margin: 0 0 20px 0; font-size: 18px;">Detalles de la Orden</h3>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
-              <div>
-                <strong style="color: #6b7280; font-size: 14px;">Número de orden:</strong><br>
-                <span style="color: #374151; font-size: 16px; font-weight: 600;">#${orderDetails.id}</span>
-              </div>
-              <div>
-                <strong style="color: #6b7280; font-size: 14px;">Fecha:</strong><br>
-                <span style="color: #374151; font-size: 14px;">${new Date(orderDetails.createdAt || orderDetails.date).toLocaleDateString('es-AR', {
-                  year: 'numeric',
-                  month: 'long',
-                  day: 'numeric',
-                  hour: '2-digit',
-                  minute: '2-digit'
-                })}</span>
-              </div>
-            </div>
-          </div>
-          <h3 style="color: #374151; margin: 30px 0 20px 0; font-size: 18px;">Productos en tu Orden</h3>
-          <div style="background-color: #f9fafb; border-radius: 8px; overflow: hidden; border: 1px solid #e5e7eb;">
-            <table style="width: 100%; border-collapse: collapse;">
-              <thead>
-                <tr style="background-color: #f3f4f6;">
-                  <th style="padding: 15px; text-align: left; color: #374151; font-weight: 600; font-size: 14px;">Producto</th>
-                  <th style="padding: 15px; text-align: center; color: #374151; font-weight: 600; font-size: 14px;">Cantidad</th>
-                  <th style="padding: 15px; text-align: right; color: #374151; font-weight: 600; font-size: 14px;">Precio Unit.</th>
-                  <th style="padding: 15px; text-align: right; color: #374151; font-weight: 600; font-size: 14px;">Subtotal</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${itemsTable}
-              </tbody>
-            </table>
-          </div>
-          <div style="background-color: #f8fafc; padding: 25px; border-radius: 8px; margin: 30px 0;">
-            <h3 style="color: #374151; margin: 0 0 20px 0; font-size: 18px;">Resumen de Cuenta</h3>
-            <div style="space-y: 3;">
-              <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #e2e8f0;">
-                <span style="color: #64748b; font-size: 16px;">Subtotal (productos):</span>
-                <span style="color: #374151; font-size: 16px; font-weight: 600;">$${subtotalARS.toLocaleString('es-AR', {minimumFractionDigits: 2})}</span>
-              </div>
-              <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #e2e8f0;">
-                <span style="color: #64748b; font-size: 16px;">Impuestos (21%):</span>
-                <span style="color: #374151; font-size: 16px; font-weight: 600;">$${taxesARS.toLocaleString('es-AR', {minimumFractionDigits: 2})}</span>
-              </div>
-              <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-top: 2px solid #2563eb; margin-top: 8px;">
-                <span style="color: #2563eb; font-size: 18px; font-weight: 600;">Total a cobrar:</span>
-                <span style="color: #2563eb; font-size: 20px; font-weight: bold;">$${totalARS.toLocaleString('es-AR', {minimumFractionDigits: 2})}</span>
-              </div>
-            </div>
-          </div>
-          <div style="background-color: #2563eb; padding: 20px; border-radius: 8px; margin: 30px 0; text-align: center;">
-            <div style="display: flex; justify-content: space-between; align-items: center; color: white;">
-              <span style="font-size: 18px; font-weight: 500;">Total Final:</span>
-              <span style="font-size: 22px; font-weight: bold;">$${totalARS.toLocaleString('es-AR', {minimumFractionDigits: 2})}</span>
-            </div>
-          </div>
-          <div style="background-color: #f0f9ff; border: 1px solid #0ea5e9; padding: 15px; border-radius: 8px; margin: 20px 0;">
-            <p style="color: #0369a1; font-size: 14px; margin: 0; text-align: center;">
-              <strong>💡 Información:</strong> Los precios están convertidos a pesos argentinos usando la tasa de cambio actual (1 USD = $${exchangeRates.ARS.toLocaleString('es-AR')} ARS)
-            </p>
-          </div>
-          <p style="text-align: center; color: #6b7280; margin-top: 30px; font-size: 16px; line-height: 1.6;">
-            Completa el pago para recibir la confirmación final de tu orden.
+  const sendSmtpEmail = new SibApiV3Sdk.SendSmtpEmail();
+  
+  sendSmtpEmail.sender = sender;
+  sendSmtpEmail.to = [{ email: email }];
+  sendSmtpEmail.subject = "Orden creada - TurismoApp";
+  sendSmtpEmail.htmlContent = `
+    <div style="max-width: 600px; margin: 0 auto; padding: 20px; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f8f9fa;">
+      <div style="background-color: white; padding: 40px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08);">
+        <h2 style="color: #2563eb; text-align: center; margin-bottom: 10px; font-size: 28px; font-weight: 300;">¡Orden Creada!</h2>
+        <p style="text-align: center; color: #6b7280; margin-bottom: 40px; font-size: 16px;">Tu orden está pendiente de pago</p>
+        <div style="background-color: #fef3c7; border: 2px solid #f59e0b; padding: 25px; border-radius: 8px; margin: 30px 0; text-align: center;">
+          <div style="font-size: 36px; margin-bottom: 15px;">⚠️</div>
+          <h3 style="color: #d97706; margin: 0; font-size: 20px; font-weight: 600;">Pendiente de Pago</h3>
+          <p style="color: #92400e; margin: 10px 0 0 0; font-size: 16px;">
+            Completa el pago para confirmar tu orden
           </p>
         </div>
+        <div style="background-color: #f3f4f6; padding: 25px; border-radius: 8px; margin-bottom: 30px;">
+          <h3 style="color: #374151; margin: 0 0 20px 0; font-size: 18px;">Detalles de la Orden</h3>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+            <div>
+              <strong style="color: #6b7280; font-size: 14px;">Número de orden:</strong><br>
+              <span style="color: #374151; font-size: 16px; font-weight: 600;">#${orderDetails.id}</span>
+            </div>
+            <div>
+              <strong style="color: #6b7280; font-size: 14px;">Fecha:</strong><br>
+              <span style="color: #374151; font-size: 14px;">${new Date(orderDetails.createdAt || orderDetails.date).toLocaleDateString('es-AR', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+              })}</span>
+            </div>
+          </div>
+        </div>
+        <h3 style="color: #374151; margin: 30px 0 20px 0; font-size: 18px;">Productos en tu Orden</h3>
+        <div style="background-color: #f9fafb; border-radius: 8px; overflow: hidden; border: 1px solid #e5e7eb;">
+          <table style="width: 100%; border-collapse: collapse;">
+            <thead>
+              <tr style="background-color: #f3f4f6;">
+                <th style="padding: 15px; text-align: left; color: #374151; font-weight: 600; font-size: 14px;">Producto</th>
+                <th style="padding: 15px; text-align: center; color: #374151; font-weight: 600; font-size: 14px;">Cantidad</th>
+                <th style="padding: 15px; text-align: right; color: #374151; font-weight: 600; font-size: 14px;">Precio Unit.</th>
+                <th style="padding: 15px; text-align: right; color: #374151; font-weight: 600; font-size: 14px;">Subtotal</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${itemsTable}
+            </tbody>
+          </table>
+        </div>
+        <div style="background-color: #f8fafc; padding: 25px; border-radius: 8px; margin: 30px 0;">
+          <h3 style="color: #374151; margin: 0 0 20px 0; font-size: 18px;">Resumen de Cuenta</h3>
+          <div style="space-y: 3;">
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #e2e8f0;">
+              <span style="color: #64748b; font-size: 16px;">Subtotal (productos):</span>
+              <span style="color: #374151; font-size: 16px; font-weight: 600;">$${subtotalARS.toLocaleString('es-AR', {minimumFractionDigits: 2})}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #e2e8f0;">
+              <span style="color: #64748b; font-size: 16px;">Impuestos (21%):</span>
+              <span style="color: #374151; font-size: 16px; font-weight: 600;">$${taxesARS.toLocaleString('es-AR', {minimumFractionDigits: 2})}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-top: 2px solid #2563eb; margin-top: 8px;">
+              <span style="color: #2563eb; font-size: 18px; font-weight: 600;">Total a cobrar:</span>
+              <span style="color: #2563eb; font-size: 20px; font-weight: bold;">$${totalARS.toLocaleString('es-AR', {minimumFractionDigits: 2})}</span>
+            </div>
+          </div>
+        </div>
+        <div style="background-color: #2563eb; padding: 20px; border-radius: 8px; margin: 30px 0; text-align: center;">
+          <div style="display: flex; justify-content: space-between; align-items: center; color: white;">
+            <span style="font-size: 18px; font-weight: 500;">Total Final:</span>
+            <span style="font-size: 22px; font-weight: bold;">$${totalARS.toLocaleString('es-AR', {minimumFractionDigits: 2})}</span>
+          </div>
+        </div>
+        <div style="background-color: #f0f9ff; border: 1px solid #0ea5e9; padding: 15px; border-radius: 8px; margin: 20px 0;">
+          <p style="color: #0369a1; font-size: 14px; margin: 0; text-align: center;">
+            <strong>💡 Información:</strong> Los precios están convertidos a pesos argentinos usando la tasa de cambio actual (1 USD = $${exchangeRates.ARS.toLocaleString('es-AR')} ARS)
+          </p>
+        </div>
+        <p style="text-align: center; color: #6b7280; margin-top: 30px; font-size: 16px; line-height: 1.6;">
+          Completa el pago para recibir la confirmación final de tu orden.
+        </p>
       </div>
-    `,
-  };
+    </div>
+  `;
 
   try {
-    await transporter.sendMail(mailOptions);
+    await apiInstance.sendTransacEmail(sendSmtpEmail);
     console.log(`✅ Email de orden creada enviado a ${email}`);
     return true;
   } catch (error) {
@@ -316,95 +312,95 @@ const sendOrderConfirmationEmail = async (email, orderDetails) => {
     `;
   }).join('');
 
-  const mailOptions = {
-    from: process.env.EMAIL_USER,
-    to: email,
-    subject: "¡Orden Confirmada! - TurismoApp",
-    html: `
-      <div style="max-width: 600px; margin: 0 auto; padding: 20px; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f8f9fa;">
-        <div style="background-color: white; padding: 40px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08);">
-          <h2 style="color: #10b981; text-align: center; margin-bottom: 10px; font-size: 28px; font-weight: 300;">¡Orden Confirmada!</h2>
-          <p style="text-align: center; color: #6b7280; margin-bottom: 40px; font-size: 16px;">Tu pago ha sido procesado exitosamente</p>
-          <div style="background-color: #d1fae5; border: 2px solid #10b981; padding: 25px; border-radius: 8px; margin: 30px 0; text-align: center;">
-            <div style="font-size: 36px; margin-bottom: 15px;">✅</div>
-            <h3 style="color: #059669; margin: 0; font-size: 20px; font-weight: 600;">Pago Aprobado</h3>
-            <p style="color: #047857; margin: 10px 0 0 0; font-size: 16px;">
-              Tu orden ha sido confirmada y está siendo procesada
-            </p>
-          </div>
-          <div style="background-color: #f3f4f6; padding: 25px; border-radius: 8px; margin-bottom: 30px;">
-            <h3 style="color: #374151; margin: 0 0 20px 0; font-size: 18px;">Detalles de la Orden</h3>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
-              <div>
-                <strong style="color: #6b7280; font-size: 14px;">Número de orden:</strong><br>
-                <span style="color: #374151; font-size: 16px; font-weight: 600;">#${orderDetails.id}</span>
-              </div>
-              <div>
-                <strong style="color: #6b7280; font-size: 14px;">Fecha:</strong><br>
-                <span style="color: #374151; font-size: 14px;">${new Date(orderDetails.createdAt || orderDetails.date).toLocaleDateString('es-AR', {
-                  year: 'numeric',
-                  month: 'long',
-                  day: 'numeric',
-                  hour: '2-digit',
-                  minute: '2-digit'
-                })}</span>
-              </div>
-            </div>
-          </div>
-          <h3 style="color: #374151; margin: 30px 0 20px 0; font-size: 18px;">Productos en tu Orden</h3>
-          <div style="background-color: #f9fafb; border-radius: 8px; overflow: hidden; border: 1px solid #e5e7eb;">
-            <table style="width: 100%; border-collapse: collapse;">
-              <thead>
-                <tr style="background-color: #f3f4f6;">
-                  <th style="padding: 15px; text-align: left; color: #374151; font-weight: 600; font-size: 14px;">Producto</th>
-                  <th style="padding: 15px; text-align: center; color: #374151; font-weight: 600; font-size: 14px;">Cantidad</th>
-                  <th style="padding: 15px; text-align: right; color: #374151; font-weight: 600; font-size: 14px;">Precio Unit.</th>
-                  <th style="padding: 15px; text-align: right; color: #374151; font-weight: 600; font-size: 14px;">Subtotal</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${itemsTable}
-              </tbody>
-            </table>
-          </div>
-          <div style="background-color: #f8fafc; padding: 25px; border-radius: 8px; margin: 30px 0;">
-            <h3 style="color: #374151; margin: 0 0 20px 0; font-size: 18px;">Resumen de Cuenta</h3>
-            <div style="space-y: 3;">
-              <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #e2e8f0;">
-                <span style="color: #64748b; font-size: 16px;">Subtotal (productos):</span>
-                <span style="color: #374151; font-size: 16px; font-weight: 600;">$${subtotalARS.toLocaleString('es-AR', {minimumFractionDigits: 2})}</span>
-              </div>
-              <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #e2e8f0;">
-                <span style="color: #64748b; font-size: 16px;">Impuestos (21%):</span>
-                <span style="color: #374151; font-size: 16px; font-weight: 600;">$${taxesARS.toLocaleString('es-AR', {minimumFractionDigits: 2})}</span>
-              </div>
-              <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-top: 2px solid #10b981; margin-top: 8px;">
-                <span style="color: #10b981; font-size: 18px; font-weight: 600;">Total Pagado:</span>
-                <span style="color: #10b981; font-size: 20px; font-weight: bold;">$${totalARS.toLocaleString('es-AR', {minimumFractionDigits: 2})}</span>
-              </div>
-            </div>
-          </div>
-          <div style="background-color: #10b981; padding: 20px; border-radius: 8px; margin: 30px 0; text-align: center;">
-            <div style="display: flex; justify-content: space-between; align-items: center; color: white;">
-              <span style="font-size: 18px; font-weight: 500;">Total Confirmado:</span>
-              <span style="font-size: 22px; font-weight: bold;">$${totalARS.toLocaleString('es-AR', {minimumFractionDigits: 2})}</span>
-            </div>
-          </div>
-          <div style="background-color: #f0f9ff; border: 1px solid #0ea5e9; padding: 15px; border-radius: 8px; margin: 20px 0;">
-            <p style="color: #0369a1; font-size: 14px; margin: 0; text-align: center;">
-              <strong>💡 Información:</strong> Los precios están convertidos a pesos argentinos usando la tasa de cambio actual (1 USD = $${exchangeRates.ARS.toLocaleString('es-AR')} ARS)
-            </p>
-          </div>
-          <p style="text-align: center; color: #6b7280; margin-top: 30px; font-size: 16px; line-height: 1.6;">
-            ¡Gracias por tu compra! Recibirás más información sobre tu viaje próximamente.
+  const sendSmtpEmail = new SibApiV3Sdk.SendSmtpEmail();
+  
+  sendSmtpEmail.sender = sender;
+  sendSmtpEmail.to = [{ email: email }];
+  sendSmtpEmail.subject = "¡Orden Confirmada! - TurismoApp";
+  sendSmtpEmail.htmlContent = `
+    <div style="max-width: 600px; margin: 0 auto; padding: 20px; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f8f9fa;">
+      <div style="background-color: white; padding: 40px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08);">
+        <h2 style="color: #10b981; text-align: center; margin-bottom: 10px; font-size: 28px; font-weight: 300;">¡Orden Confirmada!</h2>
+        <p style="text-align: center; color: #6b7280; margin-bottom: 40px; font-size: 16px;">Tu pago ha sido procesado exitosamente</p>
+        <div style="background-color: #d1fae5; border: 2px solid #10b981; padding: 25px; border-radius: 8px; margin: 30px 0; text-align: center;">
+          <div style="font-size: 36px; margin-bottom: 15px;">✅</div>
+          <h3 style="color: #059669; margin: 0; font-size: 20px; font-weight: 600;">Pago Aprobado</h3>
+          <p style="color: #047857; margin: 10px 0 0 0; font-size: 16px;">
+            Tu orden ha sido confirmada y está siendo procesada
           </p>
         </div>
+        <div style="background-color: #f3f4f6; padding: 25px; border-radius: 8px; margin-bottom: 30px;">
+          <h3 style="color: #374151; margin: 0 0 20px 0; font-size: 18px;">Detalles de la Orden</h3>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+            <div>
+              <strong style="color: #6b7280; font-size: 14px;">Número de orden:</strong><br>
+              <span style="color: #374151; font-size: 16px; font-weight: 600;">#${orderDetails.id}</span>
+            </div>
+            <div>
+              <strong style="color: #6b7280; font-size: 14px;">Fecha:</strong><br>
+              <span style="color: #374151; font-size: 14px;">${new Date(orderDetails.createdAt || orderDetails.date).toLocaleDateString('es-AR', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+              })}</span>
+            </div>
+          </div>
+        </div>
+        <h3 style="color: #374151; margin: 30px 0 20px 0; font-size: 18px;">Productos en tu Orden</h3>
+        <div style="background-color: #f9fafb; border-radius: 8px; overflow: hidden; border: 1px solid #e5e7eb;">
+          <table style="width: 100%; border-collapse: collapse;">
+            <thead>
+              <tr style="background-color: #f3f4f6;">
+                <th style="padding: 15px; text-align: left; color: #374151; font-weight: 600; font-size: 14px;">Producto</th>
+                <th style="padding: 15px; text-align: center; color: #374151; font-weight: 600; font-size: 14px;">Cantidad</th>
+                <th style="padding: 15px; text-align: right; color: #374151; font-weight: 600; font-size: 14px;">Precio Unit.</th>
+                <th style="padding: 15px; text-align: right; color: #374151; font-weight: 600; font-size: 14px;">Subtotal</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${itemsTable}
+            </tbody>
+          </table>
+        </div>
+        <div style="background-color: #f8fafc; padding: 25px; border-radius: 8px; margin: 30px 0;">
+          <h3 style="color: #374151; margin: 0 0 20px 0; font-size: 18px;">Resumen de Cuenta</h3>
+          <div style="space-y: 3;">
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #e2e8f0;">
+              <span style="color: #64748b; font-size: 16px;">Subtotal (productos):</span>
+              <span style="color: #374151; font-size: 16px; font-weight: 600;">$${subtotalARS.toLocaleString('es-AR', {minimumFractionDigits: 2})}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #e2e8f0;">
+              <span style="color: #64748b; font-size: 16px;">Impuestos (21%):</span>
+              <span style="color: #374151; font-size: 16px; font-weight: 600;">$${taxesARS.toLocaleString('es-AR', {minimumFractionDigits: 2})}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-top: 2px solid #10b981; margin-top: 8px;">
+              <span style="color: #10b981; font-size: 18px; font-weight: 600;">Total Pagado:</span>
+              <span style="color: #10b981; font-size: 20px; font-weight: bold;">$${totalARS.toLocaleString('es-AR', {minimumFractionDigits: 2})}</span>
+            </div>
+          </div>
+        </div>
+        <div style="background-color: #10b981; padding: 20px; border-radius: 8px; margin: 30px 0; text-align: center;">
+          <div style="display: flex; justify-content: space-between; align-items: center; color: white;">
+            <span style="font-size: 18px; font-weight: 500;">Total Confirmado:</span>
+            <span style="font-size: 22px; font-weight: bold;">$${totalARS.toLocaleString('es-AR', {minimumFractionDigits: 2})}</span>
+          </div>
+        </div>
+        <div style="background-color: #f0f9ff; border: 1px solid #0ea5e9; padding: 15px; border-radius: 8px; margin: 20px 0;">
+          <p style="color: #0369a1; font-size: 14px; margin: 0; text-align: center;">
+            <strong>💡 Información:</strong> Los precios están convertidos a pesos argentinos usando la tasa de cambio actual (1 USD = $${exchangeRates.ARS.toLocaleString('es-AR')} ARS)
+          </p>
+        </div>
+        <p style="text-align: center; color: #6b7280; margin-top: 30px; font-size: 16px; line-height: 1.6;">
+          ¡Gracias por tu compra! Recibirás más información sobre tu viaje próximamente.
+        </p>
       </div>
-    `,
-  };
+    </div>
+  `;
 
   try {
-    await transporter.sendMail(mailOptions);
+    await apiInstance.sendTransacEmail(sendSmtpEmail);
     console.log(`✅ Email de confirmación enviado a ${email}`);
     return true;
   } catch (error) {
@@ -506,102 +502,102 @@ const sendOrderStatusUpdateEmail = async (email, orderDetails, newStatus) => {
     `;
   }).join('');
 
-  const mailOptions = {
-    from: process.env.EMAIL_USER,
-    to: email,
-    subject: `Actualización de Orden #${orderDetails.id} - TurismoApp`,
-    html: `
-      <div style="max-width: 600px; margin: 0 auto; padding: 20px; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f8f9fa;">
-        <div style="background-color: white; padding: 40px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08);">
-          <h2 style="color: #2563eb; text-align: center; margin-bottom: 10px; font-size: 28px; font-weight: 300;">Actualización de Orden</h2>
-          <p style="text-align: center; color: #6b7280; margin-bottom: 40px; font-size: 16px;">Tu orden ha sido actualizada</p>
-          
-          <div style="background-color: ${config.bgColor}; border: 2px solid ${config.borderColor}; padding: 25px; border-radius: 8px; margin: 30px 0; text-align: center;">
-            <div style="font-size: 36px; margin-bottom: 15px;">${config.icon}</div>
-            <h3 style="color: ${config.color}; margin: 0; font-size: 20px; font-weight: 600;">${config.title}</h3>
-            <p style="color: ${config.color}; margin: 10px 0 0 0; font-size: 16px;">
-              ${config.description}
-            </p>
-          </div>
-
-          <div style="background-color: #f3f4f6; padding: 25px; border-radius: 8px; margin-bottom: 30px;">
-            <h3 style="color: #374151; margin: 0 0 20px 0; font-size: 18px;">Detalles de la Orden</h3>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
-              <div>
-                <strong style="color: #6b7280; font-size: 14px;">Número de orden:</strong><br>
-                <span style="color: #374151; font-size: 16px; font-weight: 600;">#${orderDetails.id}</span>
-              </div>
-              <div>
-                <strong style="color: #6b7280; font-size: 14px;">Fecha:</strong><br>
-                <span style="color: #374151; font-size: 14px;">${new Date(orderDetails.createdAt || orderDetails.date).toLocaleDateString('es-AR', {
-                  year: 'numeric',
-                  month: 'long',
-                  day: 'numeric',
-                  hour: '2-digit',
-                  minute: '2-digit'
-                })}</span>
-              </div>
-            </div>
-          </div>
-
-          <h3 style="color: #374151; margin: 30px 0 20px 0; font-size: 18px;">Productos en tu Orden</h3>
-          <div style="background-color: #f9fafb; border-radius: 8px; overflow: hidden; border: 1px solid #e5e7eb;">
-            <table style="width: 100%; border-collapse: collapse;">
-              <thead>
-                <tr style="background-color: #f3f4f6;">
-                  <th style="padding: 15px; text-align: left; color: #374151; font-weight: 600; font-size: 14px;">Producto</th>
-                  <th style="padding: 15px; text-align: center; color: #374151; font-weight: 600; font-size: 14px;">Cantidad</th>
-                  <th style="padding: 15px; text-align: right; color: #374151; font-weight: 600; font-size: 14px;">Precio Unit.</th>
-                  <th style="padding: 15px; text-align: right; color: #374151; font-weight: 600; font-size: 14px;">Subtotal</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${itemsTable}
-              </tbody>
-            </table>
-          </div>
-
-          <div style="background-color: #f8fafc; padding: 25px; border-radius: 8px; margin: 30px 0;">
-            <h3 style="color: #374151; margin: 0 0 20px 0; font-size: 18px;">Resumen de Cuenta</h3>
-            <div style="space-y: 3;">
-              <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #e2e8f0;">
-                <span style="color: #64748b; font-size: 16px;">Subtotal (productos):</span>
-                <span style="color: #374151; font-size: 16px; font-weight: 600;">$${subtotalARS.toLocaleString('es-AR', {minimumFractionDigits: 2})}</span>
-              </div>
-              <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #e2e8f0;">
-                <span style="color: #64748b; font-size: 16px;">Impuestos (21%):</span>
-                <span style="color: #374151; font-size: 16px; font-weight: 600;">$${taxesARS.toLocaleString('es-AR', {minimumFractionDigits: 2})}</span>
-              </div>
-              <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-top: 2px solid #2563eb; margin-top: 8px;">
-                <span style="color: #2563eb; font-size: 18px; font-weight: 600;">Total:</span>
-                <span style="color: #2563eb; font-size: 20px; font-weight: bold;">$${totalARS.toLocaleString('es-AR', {minimumFractionDigits: 2})}</span>
-              </div>
-            </div>
-          </div>
-
-          <div style="background-color: ${config.bgColor}; border: 1px solid ${config.borderColor}; padding: 15px; border-radius: 8px; margin: 20px 0;">
-            <p style="color: ${config.color}; font-size: 14px; margin: 0; text-align: center;">
-              <strong>Nuevo Estado: ${statusText}</strong><br>
-              ${status === 3 ? 'Tu orden ha sido cancelada' : 'Tu orden ha sido actualizada'}
-            </p>
-          </div>
-
-          <div style="background-color: #f0f9ff; border: 1px solid #0ea5e9; padding: 15px; border-radius: 8px; margin: 20px 0;">
-            <p style="color: #0369a1; font-size: 14px; margin: 0; text-align: center;">
-              <strong>💡 Información:</strong> Los precios están convertidos a pesos argentinos usando la tasa de cambio actual (1 USD = $${exchangeRates.ARS.toLocaleString('es-AR')} ARS)
-            </p>
-          </div>
-
-          <p style="text-align: center; color: #6b7280; margin-top: 30px; font-size: 16px; line-height: 1.6;">
-            Puedes ver más detalles de tu orden en tu perfil de usuario.
+  const sendSmtpEmail = new SibApiV3Sdk.SendSmtpEmail();
+  
+  sendSmtpEmail.sender = sender;
+  sendSmtpEmail.to = [{ email: email }];
+  sendSmtpEmail.subject = `Actualización de Orden #${orderDetails.id} - TurismoApp`;
+  sendSmtpEmail.htmlContent = `
+    <div style="max-width: 600px; margin: 0 auto; padding: 20px; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f8f9fa;">
+      <div style="background-color: white; padding: 40px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08);">
+        <h2 style="color: #2563eb; text-align: center; margin-bottom: 10px; font-size: 28px; font-weight: 300;">Actualización de Orden</h2>
+        <p style="text-align: center; color: #6b7280; margin-bottom: 40px; font-size: 16px;">Tu orden ha sido actualizada</p>
+        
+        <div style="background-color: ${config.bgColor}; border: 2px solid ${config.borderColor}; padding: 25px; border-radius: 8px; margin: 30px 0; text-align: center;">
+          <div style="font-size: 36px; margin-bottom: 15px;">${config.icon}</div>
+          <h3 style="color: ${config.color}; margin: 0; font-size: 20px; font-weight: 600;">${config.title}</h3>
+          <p style="color: ${config.color}; margin: 10px 0 0 0; font-size: 16px;">
+            ${config.description}
           </p>
         </div>
+
+        <div style="background-color: #f3f4f6; padding: 25px; border-radius: 8px; margin-bottom: 30px;">
+          <h3 style="color: #374151; margin: 0 0 20px 0; font-size: 18px;">Detalles de la Orden</h3>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+            <div>
+              <strong style="color: #6b7280; font-size: 14px;">Número de orden:</strong><br>
+              <span style="color: #374151; font-size: 16px; font-weight: 600;">#${orderDetails.id}</span>
+            </div>
+            <div>
+              <strong style="color: #6b7280; font-size: 14px;">Fecha:</strong><br>
+              <span style="color: #374151; font-size: 14px;">${new Date(orderDetails.createdAt || orderDetails.date).toLocaleDateString('es-AR', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+              })}</span>
+            </div>
+          </div>
+        </div>
+
+        <h3 style="color: #374151; margin: 30px 0 20px 0; font-size: 18px;">Productos en tu Orden</h3>
+        <div style="background-color: #f9fafb; border-radius: 8px; overflow: hidden; border: 1px solid #e5e7eb;">
+          <table style="width: 100%; border-collapse: collapse;">
+            <thead>
+              <tr style="background-color: #f3f4f6;">
+                <th style="padding: 15px; text-align: left; color: #374151; font-weight: 600; font-size: 14px;">Producto</th>
+                <th style="padding: 15px; text-align: center; color: #374151; font-weight: 600; font-size: 14px;">Cantidad</th>
+                <th style="padding: 15px; text-align: right; color: #374151; font-weight: 600; font-size: 14px;">Precio Unit.</th>
+                <th style="padding: 15px; text-align: right; color: #374151; font-weight: 600; font-size: 14px;">Subtotal</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${itemsTable}
+            </tbody>
+          </table>
+        </div>
+
+        <div style="background-color: #f8fafc; padding: 25px; border-radius: 8px; margin: 30px 0;">
+          <h3 style="color: #374151; margin: 0 0 20px 0; font-size: 18px;">Resumen de Cuenta</h3>
+          <div style="space-y: 3;">
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #e2e8f0;">
+              <span style="color: #64748b; font-size: 16px;">Subtotal (productos):</span>
+              <span style="color: #374151; font-size: 16px; font-weight: 600;">$${subtotalARS.toLocaleString('es-AR', {minimumFractionDigits: 2})}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #e2e8f0;">
+              <span style="color: #64748b; font-size: 16px;">Impuestos (21%):</span>
+              <span style="color: #374151; font-size: 16px; font-weight: 600;">$${taxesARS.toLocaleString('es-AR', {minimumFractionDigits: 2})}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-top: 2px solid #2563eb; margin-top: 8px;">
+              <span style="color: #2563eb; font-size: 18px; font-weight: 600;">Total:</span>
+              <span style="color: #2563eb; font-size: 20px; font-weight: bold;">$${totalARS.toLocaleString('es-AR', {minimumFractionDigits: 2})}</span>
+            </div>
+          </div>
+        </div>
+
+        <div style="background-color: ${config.bgColor}; border: 1px solid ${config.borderColor}; padding: 15px; border-radius: 8px; margin: 20px 0;">
+          <p style="color: ${config.color}; font-size: 14px; margin: 0; text-align: center;">
+            <strong>Nuevo Estado: ${statusText}</strong><br>
+            ${status === 3 ? 'Tu orden ha sido cancelada' : 'Tu orden ha sido actualizada'}
+          </p>
+        </div>
+
+        <div style="background-color: #f0f9ff; border: 1px solid #0ea5e9; padding: 15px; border-radius: 8px; margin: 20px 0;">
+          <p style="color: #0369a1; font-size: 14px; margin: 0; text-align: center;">
+            <strong>💡 Información:</strong> Los precios están convertidos a pesos argentinos usando la tasa de cambio actual (1 USD = $${exchangeRates.ARS.toLocaleString('es-AR')} ARS)
+          </p>
+        </div>
+
+        <p style="text-align: center; color: #6b7280; margin-top: 30px; font-size: 16px; line-height: 1.6;">
+          Puedes ver más detalles de tu orden en tu perfil de usuario.
+        </p>
       </div>
-    `,
-  };
+    </div>
+  `;
 
   try {
-    await transporter.sendMail(mailOptions);
+    await apiInstance.sendTransacEmail(sendSmtpEmail);
     console.log(`✅ Email de actualización enviado a ${email}`);
     return true;
   } catch (error) {
